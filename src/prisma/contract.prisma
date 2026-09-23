@@ -1,0 +1,482 @@
+// use prisma-8
+// Contract inferred from the live database schema. Edit as needed, then run `prisma contract emit`.
+
+namespace public {
+  model Clientes {
+    id                   Uuid                        @id(map: "clientes_pkey") @default(dbgenerated("gen_random_uuid()"))
+    tipoIdentificacion   pg.enum(TipoIdentificacion) @map("tipo_identificacion")
+    numeroIdentificacion VarChar(30)                 @unique(map: "clientes_numero_identificacion_key") @map("numero_identificacion")
+    digitoVerificacion   VarChar(1)?                 @map("digito_verificacion")
+    nombreRazonSocial    VarChar(200)                @map("nombre_razon_social")
+    direccion            VarChar(250)?
+    telefono             VarChar(30)?
+    email                VarChar(200)?
+    activo               Boolean                     @default(true)
+    createdAt            Timestamptz                 @default(now()) @map("created_at")
+    updatedAt            Timestamptz                 @default(now()) @map("updated_at")
+    facturas             Facturas[]
+    motocicletas         Motocicletas[]
+    ordenesServicios     OrdenesServicio[]
+
+    @@rls
+    @@map("clientes")
+  }
+
+  model ConfiguracionEmpresa {
+    id                 Uuid               @id(map: "configuracion_empresa_pkey") @default(dbgenerated("gen_random_uuid()"))
+    singleton          Boolean            @default(true) @unique(map: "configuracion_empresa_singleton_key")
+    nit                VarChar(20)        @unique(map: "configuracion_empresa_nit_key")
+    digitoVerificacion VarChar(1)?        @map("digito_verificacion")
+    razonSocial        VarChar(200)       @map("razon_social")
+    direccion          VarChar(250)?
+    telefono           VarChar(30)?
+    email              VarChar(200)?
+    regimenFiscal      VarChar(150)?      @map("regimen_fiscal")
+    createdAt          Timestamptz        @default(now()) @map("created_at")
+    updatedAt          Timestamptz        @default(now()) @map("updated_at")
+    configuracionDian  ConfiguracionDian?
+
+    @@check(expression: "(singleton = true)", map: "configuracion_empresa_singleton_check")
+    @@rls
+    @@map("configuracion_empresa")
+  }
+
+  model ConfiguracionDian {
+    id                 Uuid                  @id(map: "configuracion_dian_pkey") @default(dbgenerated("gen_random_uuid()"))
+    empresaId          Uuid                  @unique(map: "configuracion_dian_empresa_id_key") @map("empresa_id")
+    ambiente           pg.enum(AmbienteDian) @default("HABILITACION")
+    prefijoFacturacion VarChar(20)?          @map("prefijo_facturacion")
+    numeroResolucion   VarChar(100)?         @map("numero_resolucion")
+    fechaResolucion    Date?                 @map("fecha_resolucion")
+    rangoDesde         Int?                  @map("rango_desde")
+    rangoHasta         Int?                  @map("rango_hasta")
+    consecutivoActual  Int?                  @map("consecutivo_actual")
+    vigenciaDesde      Date?                 @map("vigencia_desde")
+    vigenciaHasta      Date?                 @map("vigencia_hasta")
+    certificadoPath    String?               @map("certificado_path")
+    certificadoExpira  Date?                 @map("certificado_expira")
+    createdAt          Timestamptz           @default(now()) @map("created_at")
+    updatedAt          Timestamptz           @default(now()) @map("updated_at")
+    empresa            ConfiguracionEmpresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade, map: "configuracion_dian_empresa_id_fkey")
+
+    @@check(expression: "((consecutivo_actual IS NULL) OR (consecutivo_actual >= 0))", map: "chk_consecutivo_dian")
+    @@check(expression: "((rango_desde IS NULL) OR (rango_hasta IS NULL) OR (rango_desde <= rango_hasta))", map: "chk_rango_facturacion")
+    @@check(expression: "((vigencia_desde IS NULL) OR (vigencia_hasta IS NULL) OR (vigencia_desde <= vigencia_hasta))", map: "chk_vigencia_dian")
+    @@rls
+    @@map("configuracion_dian")
+  }
+
+  model ItemsCatalogo {
+    id             Uuid                      @id(map: "items_catalogo_pkey") @default(dbgenerated("gen_random_uuid()"))
+    codigo         VarChar(50)               @unique(map: "items_catalogo_codigo_key")
+    nombre         VarChar(200)
+    descripcion    String?
+    tipo           pg.enum(TipoItemCatalogo)
+    precioVenta    Numeric(14, 2)            @map("precio_venta")
+    tratamientoIva pg.enum(TratamientoIva)   @default("GRAVADO") @map("tratamiento_iva")
+    tarifaIva      Numeric(5, 2)             @default(19) @map("tarifa_iva")
+    activo         Boolean                   @default(true)
+    createdAt      Timestamptz               @default(now()) @map("created_at")
+    updatedAt      Timestamptz               @default(now()) @map("updated_at")
+    detallesOrdens DetallesOrden[]
+
+    @@index([activo], map: "idx_catalogo_activo")
+    @@index([tipo], map: "idx_catalogo_tipo")
+    @@check(expression: "((tratamiento_iva = 'GRAVADO'::tratamiento_iva) OR (tarifa_iva = (0)::numeric))", map: "chk_iva_exento_excluido")
+    @@check(expression: "(precio_venta >= (0)::numeric)", map: "chk_precio_catalogo")
+    @@check(expression: "((tarifa_iva >= (0)::numeric) AND (tarifa_iva <= (100)::numeric))", map: "chk_tarifa_iva")
+    @@rls
+    @@map("items_catalogo")
+  }
+
+  model Motocicletas {
+    id                          Uuid                         @id(map: "motocicletas_pkey") @default(dbgenerated("gen_random_uuid()"))
+    clienteId                   Uuid                         @map("cliente_id")
+    placa                       VarChar(20)
+    marca                       VarChar(100)
+    modelo                      VarChar(100)
+    anio                        Int?
+    cilindraje                  Int?
+    kilometrajeActual           Int?                         @map("kilometraje_actual")
+    activa                      Boolean                      @default(true)
+    createdAt                   Timestamptz                  @default(now()) @map("created_at")
+    updatedAt                   Timestamptz                  @default(now()) @map("updated_at")
+    ordenesServicios            OrdenesServicio[]
+    recordatoriosMantenimientos RecordatoriosMantenimiento[]
+    cliente                     Clientes                     @relation(fields: [clienteId], references: [id], onDelete: Restrict, map: "motocicletas_cliente_id_fkey")
+
+    @@index([clienteId], map: "idx_motocicletas_cliente")
+    @@index(expression: "upper(placa::text)", map: "uq_motocicletas_placa_activa", where: "(activa = true)", unique: true)
+    @@check(expression: "((anio IS NULL) OR ((anio >= 1900) AND (anio <= 2100)))", map: "chk_anio_motocicleta")
+    @@check(expression: "((cilindraje IS NULL) OR (cilindraje > 0))", map: "chk_cilindraje")
+    @@check(expression: "((kilometraje_actual IS NULL) OR (kilometraje_actual >= 0))", map: "chk_kilometraje_actual")
+    @@rls
+    @@map("motocicletas")
+  }
+
+  // WARNING: Foreign key "id" -> "auth.users" exists in the database, but its target schema is outside the introspected scope, so no relation field was generated. If the target schema is described by an extension pack, add it to extensions and re-run infer.
+  model Profiles {
+    id                          Uuid                         @id(map: "profiles_pkey")
+    nombre                      VarChar(150)
+    rol                         pg.enum(RolUsuario)          @default("OPERADOR")
+    activo                      Boolean                      @default(true)
+    createdAt                   Timestamptz                  @default(now()) @map("created_at")
+    updatedAt                   Timestamptz                  @default(now()) @map("updated_at")
+    facturas                    Facturas[]
+    notasCreditos               NotasCredito[]
+    ordenesServicios            OrdenesServicio[]
+    pagos                       Pagos[]
+    recordatoriosMantenimientos RecordatoriosMantenimiento[]
+
+    @@rls
+    @@map("profiles")
+  }
+
+  model OrdenesServicio {
+    id                          Uuid                         @id(map: "ordenes_servicio_pkey") @default(dbgenerated("gen_random_uuid()"))
+    numero                      VarChar(50)                  @unique(map: "ordenes_servicio_numero_key")
+    clienteId                   Uuid                         @map("cliente_id")
+    motocicletaId               Uuid                         @map("motocicleta_id")
+    creadaPor                   Uuid?                        @map("creada_por")
+    fechaIngreso                Timestamptz                  @default(now()) @map("fecha_ingreso")
+    kilometrajeIngreso          Int                          @map("kilometraje_ingreso")
+    motivoIngreso               String                       @map("motivo_ingreso")
+    observaciones               String?
+    estado                      pg.enum(EstadoOrden)         @default("ABIERTA")
+    subtotal                    Numeric(14, 2)               @default(0)
+    impuestos                   Numeric(14, 2)               @default(0)
+    total                       Numeric(14, 2)               @default(0)
+    finalizadaAt                Timestamptz?                 @map("finalizada_at")
+    createdAt                   Timestamptz                  @default(now()) @map("created_at")
+    updatedAt                   Timestamptz                  @default(now()) @map("updated_at")
+    detallesOrdens              DetallesOrden[]
+    facturas                    Facturas?
+    recordatoriosMantenimientos RecordatoriosMantenimiento[]
+    cliente                     Clientes                     @relation(fields: [clienteId], references: [id], onDelete: Restrict, map: "ordenes_servicio_cliente_id_fkey")
+    profiles                    Profiles?                    @relation(fields: [creadaPor], references: [id], onDelete: SetNull, map: "ordenes_servicio_creada_por_fkey", index: false)
+    motocicleta                 Motocicletas                 @relation(fields: [motocicletaId], references: [id], onDelete: Restrict, map: "ordenes_servicio_motocicleta_id_fkey")
+
+    @@index([clienteId], map: "idx_ordenes_cliente")
+    @@index([estado], map: "idx_ordenes_estado")
+    @@index([fechaIngreso], map: "idx_ordenes_fecha")
+    @@index([motocicletaId], map: "idx_ordenes_motocicleta")
+    @@check(expression: "(impuestos >= (0)::numeric)", map: "chk_orden_impuestos")
+    @@check(expression: "(kilometraje_ingreso >= 0)", map: "chk_orden_kilometraje")
+    @@check(expression: "(subtotal >= (0)::numeric)", map: "chk_orden_subtotal")
+    @@check(expression: "(total >= (0)::numeric)", map: "chk_orden_total")
+    @@rls
+    @@map("ordenes_servicio")
+  }
+
+  model DetallesOrden {
+    id               Uuid                      @id(map: "detalles_orden_pkey") @default(dbgenerated("gen_random_uuid()"))
+    ordenId          Uuid                      @map("orden_id")
+    itemCatalogoId   Uuid                      @map("item_catalogo_id")
+    codigoItem       VarChar(50)               @map("codigo_item")
+    nombreItem       VarChar(200)              @map("nombre_item")
+    tipoItem         pg.enum(TipoItemCatalogo) @map("tipo_item")
+    cantidad         Numeric(10, 2)            @default(1)
+    precioUnitario   Numeric(14, 2)            @map("precio_unitario")
+    tratamientoIva   pg.enum(TratamientoIva)   @map("tratamiento_iva")
+    tarifaIva        Numeric(5, 2)             @map("tarifa_iva")
+    subtotal         Numeric(14, 2)
+    impuesto         Numeric(14, 2)            @default(0)
+    total            Numeric(14, 2)
+    createdAt        Timestamptz               @default(now()) @map("created_at")
+    detallesFacturas DetallesFactura[]
+    itemCatalogo     ItemsCatalogo             @relation(fields: [itemCatalogoId], references: [id], onDelete: Restrict, map: "detalles_orden_item_catalogo_id_fkey")
+    orden            OrdenesServicio           @relation(fields: [ordenId], references: [id], onDelete: Cascade, map: "detalles_orden_orden_id_fkey")
+
+    @@index([itemCatalogoId], map: "idx_detalles_orden_item")
+    @@index([ordenId], map: "idx_detalles_orden_orden")
+    @@check(expression: "(cantidad > (0)::numeric)", map: "chk_detalle_orden_cantidad")
+    @@check(expression: "(impuesto >= (0)::numeric)", map: "chk_detalle_orden_impuesto")
+    @@check(expression: "((tarifa_iva >= (0)::numeric) AND (tarifa_iva <= (100)::numeric))", map: "chk_detalle_orden_iva")
+    @@check(expression: "(precio_unitario >= (0)::numeric)", map: "chk_detalle_orden_precio")
+    @@check(expression: "(subtotal >= (0)::numeric)", map: "chk_detalle_orden_subtotal")
+    @@check(expression: "(total >= (0)::numeric)", map: "chk_detalle_orden_total")
+    @@rls
+    @@map("detalles_orden")
+  }
+
+  model Facturas {
+    id               Uuid                @id(map: "facturas_pkey") @default(dbgenerated("gen_random_uuid()"))
+    ordenId          Uuid                @unique(map: "facturas_orden_id_key") @map("orden_id")
+    clienteId        Uuid                @map("cliente_id")
+    creadaPor        Uuid?               @map("creada_por")
+    prefijo          VarChar(20)?
+    consecutivo      Int
+    numero           VarChar(50)         @unique(map: "facturas_numero_key")
+    fechaEmision     Timestamptz         @default(now()) @map("fecha_emision")
+    fechaVencimiento Date?               @map("fecha_vencimiento")
+    formaPago        pg.enum(FormaPago)  @map("forma_pago")
+    subtotal         Numeric(14, 2)
+    impuestos        Numeric(14, 2)      @default(0)
+    total            Numeric(14, 2)
+    cufe             VarChar(100)?       @unique(map: "facturas_cufe_key")
+    estadoDian       pg.enum(EstadoDian) @default("PENDIENTE_ENVIO") @map("estado_dian")
+    xmlPath          String?             @map("xml_path")
+    pdfPath          String?             @map("pdf_path")
+    createdAt        Timestamptz         @default(now()) @map("created_at")
+    updatedAt        Timestamptz         @default(now()) @map("updated_at")
+    detallesFacturas DetallesFactura[]
+    enviosDians      EnviosDian[]
+    notasCreditos    NotasCredito[]
+    pagos            Pagos[]
+    cliente          Clientes            @relation(fields: [clienteId], references: [id], onDelete: Restrict, map: "facturas_cliente_id_fkey")
+    profiles         Profiles?           @relation(fields: [creadaPor], references: [id], onDelete: SetNull, map: "facturas_creada_por_fkey", index: false)
+    orden            OrdenesServicio     @relation(fields: [ordenId], references: [id], onDelete: Restrict, map: "facturas_orden_id_fkey")
+
+    @@unique([prefijo, consecutivo], map: "uq_factura_prefijo_consecutivo")
+    @@index([clienteId], map: "idx_facturas_cliente")
+    @@index([estadoDian], map: "idx_facturas_estado_dian")
+    @@index([fechaEmision], map: "idx_facturas_fecha")
+    @@check(expression: "((forma_pago = 'CONTADO'::forma_pago) OR (fecha_vencimiento IS NOT NULL))", map: "chk_credito_vencimiento")
+    @@check(expression: "(consecutivo > 0)", map: "chk_factura_consecutivo")
+    @@check(expression: "(impuestos >= (0)::numeric)", map: "chk_factura_impuestos")
+    @@check(expression: "(subtotal >= (0)::numeric)", map: "chk_factura_subtotal")
+    @@check(expression: "(total >= (0)::numeric)", map: "chk_factura_total")
+    @@rls
+    @@map("facturas")
+  }
+
+  model DetallesFactura {
+    id                   Uuid                  @id(map: "detalles_factura_pkey") @default(dbgenerated("gen_random_uuid()"))
+    facturaId            Uuid                  @map("factura_id")
+    detalleOrdenId       Uuid?                 @map("detalle_orden_id")
+    codigoItem           VarChar(50)?          @map("codigo_item")
+    descripcion          VarChar(250)
+    cantidad             Numeric(10, 2)
+    precioUnitario       Numeric(14, 2)        @map("precio_unitario")
+    tarifaIva            Numeric(5, 2)         @map("tarifa_iva")
+    subtotal             Numeric(14, 2)
+    impuesto             Numeric(14, 2)        @default(0)
+    total                Numeric(14, 2)
+    createdAt            Timestamptz           @default(now()) @map("created_at")
+    detallesNotaCreditos DetallesNotaCredito[]
+    detalleOrden         DetallesOrden?        @relation(fields: [detalleOrdenId], references: [id], onDelete: SetNull, map: "detalles_factura_detalle_orden_id_fkey", index: false)
+    factura              Facturas              @relation(fields: [facturaId], references: [id], onDelete: Cascade, map: "detalles_factura_factura_id_fkey")
+
+    @@index([facturaId], map: "idx_detalles_factura_factura")
+    @@check(expression: "(cantidad > (0)::numeric)", map: "chk_detalle_factura_cantidad")
+    @@check(expression: "(impuesto >= (0)::numeric)", map: "chk_detalle_factura_impuesto")
+    @@check(expression: "((tarifa_iva >= (0)::numeric) AND (tarifa_iva <= (100)::numeric))", map: "chk_detalle_factura_iva")
+    @@check(expression: "(precio_unitario >= (0)::numeric)", map: "chk_detalle_factura_precio")
+    @@check(expression: "(subtotal >= (0)::numeric)", map: "chk_detalle_factura_subtotal")
+    @@check(expression: "(total >= (0)::numeric)", map: "chk_detalle_factura_total")
+    @@rls
+    @@map("detalles_factura")
+  }
+
+  model NotasCredito {
+    id                   Uuid                    @id(map: "notas_credito_pkey") @default(dbgenerated("gen_random_uuid()"))
+    facturaId            Uuid                    @map("factura_id")
+    creadaPor            Uuid?                   @map("creada_por")
+    numero               VarChar(50)             @unique(map: "notas_credito_numero_key")
+    tipoAjuste           pg.enum(TipoAjusteNota) @map("tipo_ajuste")
+    motivo               String
+    fechaEmision         Timestamptz             @default(now()) @map("fecha_emision")
+    subtotal             Numeric(14, 2)
+    impuestos            Numeric(14, 2)          @default(0)
+    total                Numeric(14, 2)
+    cude                 VarChar(100)?           @unique(map: "notas_credito_cude_key")
+    estadoDian           pg.enum(EstadoDian)     @default("PENDIENTE_ENVIO") @map("estado_dian")
+    xmlPath              String?                 @map("xml_path")
+    pdfPath              String?                 @map("pdf_path")
+    createdAt            Timestamptz             @default(now()) @map("created_at")
+    updatedAt            Timestamptz             @default(now()) @map("updated_at")
+    detallesNotaCreditos DetallesNotaCredito[]
+    enviosDians          EnviosDian[]
+    profiles             Profiles?               @relation(fields: [creadaPor], references: [id], onDelete: SetNull, map: "notas_credito_creada_por_fkey", index: false)
+    factura              Facturas                @relation(fields: [facturaId], references: [id], onDelete: Restrict, map: "notas_credito_factura_id_fkey")
+
+    @@index([estadoDian], map: "idx_notas_estado_dian")
+    @@index([facturaId], map: "idx_notas_factura")
+    @@check(expression: "(impuestos >= (0)::numeric)", map: "chk_nc_impuestos")
+    @@check(expression: "(subtotal >= (0)::numeric)", map: "chk_nc_subtotal")
+    @@check(expression: "(total > (0)::numeric)", map: "chk_nc_total")
+    @@rls
+    @@map("notas_credito")
+  }
+
+  model DetallesNotaCredito {
+    id               Uuid             @id(map: "detalles_nota_credito_pkey") @default(dbgenerated("gen_random_uuid()"))
+    notaCreditoId    Uuid             @map("nota_credito_id")
+    detalleFacturaId Uuid?            @map("detalle_factura_id")
+    descripcion      VarChar(250)
+    cantidad         Numeric(10, 2)
+    precioUnitario   Numeric(14, 2)   @map("precio_unitario")
+    tarifaIva        Numeric(5, 2)    @map("tarifa_iva")
+    subtotal         Numeric(14, 2)
+    impuesto         Numeric(14, 2)   @default(0)
+    total            Numeric(14, 2)
+    createdAt        Timestamptz      @default(now()) @map("created_at")
+    detalleFactura   DetallesFactura? @relation(fields: [detalleFacturaId], references: [id], onDelete: SetNull, map: "detalles_nota_credito_detalle_factura_id_fkey", index: false)
+    notaCredito      NotasCredito     @relation(fields: [notaCreditoId], references: [id], onDelete: Cascade, map: "detalles_nota_credito_nota_credito_id_fkey")
+
+    @@index([notaCreditoId], map: "idx_detalles_nc_nota")
+    @@check(expression: "(cantidad > (0)::numeric)", map: "chk_detalle_nc_cantidad")
+    @@check(expression: "(impuesto >= (0)::numeric)", map: "chk_detalle_nc_impuesto")
+    @@check(expression: "((tarifa_iva >= (0)::numeric) AND (tarifa_iva <= (100)::numeric))", map: "chk_detalle_nc_iva")
+    @@check(expression: "(precio_unitario >= (0)::numeric)", map: "chk_detalle_nc_precio")
+    @@check(expression: "(subtotal >= (0)::numeric)", map: "chk_detalle_nc_subtotal")
+    @@check(expression: "(total > (0)::numeric)", map: "chk_detalle_nc_total")
+    @@rls
+    @@map("detalles_nota_credito")
+  }
+
+  model EnviosDian {
+    id               Uuid                     @id(map: "envios_dian_pkey") @default(dbgenerated("gen_random_uuid()"))
+    facturaId        Uuid?                    @map("factura_id")
+    notaCreditoId    Uuid?                    @map("nota_credito_id")
+    numeroIntento    Int                      @default(1) @map("numero_intento")
+    fechaEnvio       Timestamptz              @default(now()) @map("fecha_envio")
+    estado           pg.enum(EstadoEnvioDian)
+    codigoRespuesta  VarChar(150)?            @map("codigo_respuesta")
+    mensajeRespuesta String?                  @map("mensaje_respuesta")
+    respuestaPath    String?                  @map("respuesta_path")
+    createdAt        Timestamptz              @default(now()) @map("created_at")
+    factura          Facturas?                @relation(fields: [facturaId], references: [id], onDelete: Cascade, map: "envios_dian_factura_id_fkey")
+    notaCredito      NotasCredito?            @relation(fields: [notaCreditoId], references: [id], onDelete: Cascade, map: "envios_dian_nota_credito_id_fkey")
+
+    @@index([facturaId], map: "idx_envios_factura")
+    @@index([fechaEnvio], map: "idx_envios_fecha")
+    @@index([notaCreditoId], map: "idx_envios_nota")
+    @@check(expression: "(((factura_id IS NOT NULL) AND (nota_credito_id IS NULL)) OR ((factura_id IS NULL) AND (nota_credito_id IS NOT NULL)))", map: "chk_envio_documento")
+    @@check(expression: "(numero_intento > 0)", map: "chk_envio_intento")
+    @@rls
+    @@map("envios_dian")
+  }
+
+  model Pagos {
+    id            Uuid                @id(map: "pagos_pkey") @default(dbgenerated("gen_random_uuid()"))
+    facturaId     Uuid                @map("factura_id")
+    registradoPor Uuid?               @map("registrado_por")
+    fechaPago     Timestamptz         @default(now()) @map("fecha_pago")
+    monto         Numeric(14, 2)
+    metodoPago    pg.enum(MetodoPago) @map("metodo_pago")
+    referencia    VarChar(150)?
+    observaciones String?
+    createdAt     Timestamptz         @default(now()) @map("created_at")
+    factura       Facturas            @relation(fields: [facturaId], references: [id], onDelete: Restrict, map: "pagos_factura_id_fkey")
+    profiles      Profiles?           @relation(fields: [registradoPor], references: [id], onDelete: SetNull, map: "pagos_registrado_por_fkey", index: false)
+
+    @@index([facturaId], map: "idx_pagos_factura")
+    @@index([fechaPago], map: "idx_pagos_fecha")
+    @@check(expression: "(monto > (0)::numeric)", map: "chk_pago_monto")
+    @@rls
+    @@map("pagos")
+  }
+
+  model RecordatoriosMantenimiento {
+    id                    Uuid                        @id(map: "recordatorios_mantenimiento_pkey") @default(dbgenerated("gen_random_uuid()"))
+    motocicletaId         Uuid                        @map("motocicleta_id")
+    ordenOrigenId         Uuid?                       @map("orden_origen_id")
+    creadoPor             Uuid?                       @map("creado_por")
+    tipoMantenimiento     VarChar(200)                @map("tipo_mantenimiento")
+    descripcion           String?
+    fechaObjetivo         Date?                       @map("fecha_objetivo")
+    kilometrajeObjetivo   Int?                        @map("kilometraje_objetivo")
+    estado                pg.enum(EstadoRecordatorio) @default("PENDIENTE")
+    notificacionEnviadaAt Timestamptz?                @map("notificacion_enviada_at")
+    completadoAt          Timestamptz?                @map("completado_at")
+    createdAt             Timestamptz                 @default(now()) @map("created_at")
+    updatedAt             Timestamptz                 @default(now()) @map("updated_at")
+    profiles              Profiles?                   @relation(fields: [creadoPor], references: [id], onDelete: SetNull, map: "recordatorios_mantenimiento_creado_por_fkey", index: false)
+    motocicleta           Motocicletas                @relation(fields: [motocicletaId], references: [id], onDelete: Restrict, map: "recordatorios_mantenimiento_motocicleta_id_fkey")
+    ordenOrigen           OrdenesServicio?            @relation(fields: [ordenOrigenId], references: [id], onDelete: SetNull, map: "recordatorios_mantenimiento_orden_origen_id_fkey", index: false)
+
+    @@index([estado], map: "idx_recordatorios_estado")
+    @@index([fechaObjetivo], map: "idx_recordatorios_fecha")
+    @@index([motocicletaId], map: "idx_recordatorios_motocicleta")
+    @@check(expression: "((kilometraje_objetivo IS NULL) OR (kilometraje_objetivo >= 0))", map: "chk_recordatorio_km")
+    @@check(expression: "((fecha_objetivo IS NOT NULL) OR (kilometraje_objetivo IS NOT NULL))", map: "chk_recordatorio_objetivo")
+    @@rls
+    @@map("recordatorios_mantenimiento")
+  }
+
+  native_enum AmbienteDian {
+    HABILITACION = "HABILITACION"
+    PRODUCCION = "PRODUCCION"
+    @@map("ambiente_dian")
+  }
+
+  native_enum EstadoDian {
+    PENDIENTE_ENVIO = "PENDIENTE_ENVIO"
+    ENVIADA = "ENVIADA"
+    VALIDADA = "VALIDADA"
+    RECHAZADA = "RECHAZADA"
+    @@map("estado_dian")
+  }
+
+  native_enum EstadoEnvioDian {
+    PENDIENTE = "PENDIENTE"
+    ENVIADO = "ENVIADO"
+    VALIDADO = "VALIDADO"
+    RECHAZADO = "RECHAZADO"
+    ERROR_CONEXION = "ERROR_CONEXION"
+    @@map("estado_envio_dian")
+  }
+
+  native_enum EstadoOrden {
+    ABIERTA = "ABIERTA"
+    EN_PROCESO = "EN_PROCESO"
+    FINALIZADA = "FINALIZADA"
+    CANCELADA = "CANCELADA"
+    @@map("estado_orden")
+  }
+
+  native_enum EstadoRecordatorio {
+    PENDIENTE = "PENDIENTE"
+    COMPLETADO = "COMPLETADO"
+    CANCELADO = "CANCELADO"
+    @@map("estado_recordatorio")
+  }
+
+  native_enum FormaPago {
+    CONTADO = "CONTADO"
+    CREDITO = "CREDITO"
+    @@map("forma_pago")
+  }
+
+  native_enum MetodoPago {
+    EFECTIVO = "EFECTIVO"
+    TRANSFERENCIA = "TRANSFERENCIA"
+    TARJETA = "TARJETA"
+    OTRO = "OTRO"
+    @@map("metodo_pago")
+  }
+
+  native_enum RolUsuario {
+    ADMINISTRADOR = "ADMINISTRADOR"
+    OPERADOR = "OPERADOR"
+    @@map("rol_usuario")
+  }
+
+  native_enum TipoAjusteNota {
+    TOTAL = "TOTAL"
+    PARCIAL = "PARCIAL"
+    @@map("tipo_ajuste_nota")
+  }
+
+  native_enum TipoIdentificacion {
+    CC = "CC"
+    CE = "CE"
+    NIT = "NIT"
+    PASAPORTE = "PASAPORTE"
+    @@map("tipo_identificacion")
+  }
+
+  native_enum TipoItemCatalogo {
+    SERVICIO = "SERVICIO"
+    REPUESTO = "REPUESTO"
+    @@map("tipo_item_catalogo")
+  }
+
+  native_enum TratamientoIva {
+    GRAVADO = "GRAVADO"
+    EXENTO = "EXENTO"
+    EXCLUIDO = "EXCLUIDO"
+    @@map("tratamiento_iva")
+  }
+}

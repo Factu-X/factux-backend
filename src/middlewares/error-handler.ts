@@ -1,0 +1,39 @@
+import type { ErrorRequestHandler } from "express";
+import { ZodError } from "zod";
+
+import { HttpError } from "../shared/http-error.js";
+
+export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
+  if (error instanceof ZodError) {
+    res.status(400).json({
+      error: {
+        message: "La solicitud contiene datos invalidos",
+        code: "VALIDATION_ERROR",
+        details: error.issues.map((issue) => ({
+          path: issue.path.join("."),
+          message: issue.message,
+        })),
+      },
+    });
+    return;
+  }
+
+  if (error instanceof HttpError) {
+    res.status(error.statusCode).json({
+      error: {
+        message: error.message,
+        code: error.code,
+      },
+    });
+    return;
+  }
+
+  console.error(error);
+
+  res.status(500).json({
+    error: {
+      message: "Error interno del servidor",
+      code: "INTERNAL_ERROR",
+    },
+  });
+};
