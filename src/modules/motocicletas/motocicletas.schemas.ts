@@ -10,7 +10,15 @@ export const clienteMotocicletasParamsSchema = z.object({
 
 export const createMotocicletaSchema = z
   .object({
-    placa: z.string().trim().min(5).max(20).transform((value) => value.toUpperCase()),
+    placa: z
+      .string()
+      .trim()
+      .transform((value) => value.toUpperCase())
+      .pipe(
+        z
+          .string()
+          .regex(/^[A-Z]{3}[0-9]{2}[A-Z]$/, "La placa debe tener formato AAA00A"),
+      ),
     marca: z.string().trim().min(1).max(100),
     modelo: z.string().trim().min(1).max(100),
     anio: z.number().int().min(1900).max(2100).nullable().optional(),

@@ -8,5 +8,5 @@ export const optionalVarchar = <Length extends number>(value: string | undefined
 export const nullableVarchar = <Length extends number>(value: string | null | undefined) =>
   value === undefined || value === null ? value : varchar<Length>(value);
 
-export const numeric = <Precision extends number, Scale extends number>(value: number) =>
+export const numeric = <Precision extends number, Scale extends number>(value: number | string) =>
   value.toString() as Numeric<Precision, Scale>;

@@ -14,6 +14,8 @@ import {
   updateMotocicleta,
 } from "../modules/motocicletas/motocicletas.service.js";
 import type { CreateMotocicletaInput } from "../modules/motocicletas/motocicletas.schemas.js";
+import { createOrden, listOrdenes } from "../modules/ordenes/ordenes.service.js";
+import { createFacturaFromOrden, listFacturas } from "../modules/facturas/facturas.service.js";
 
 const seedEmpresa = async () => {
   const data = {
@@ -72,6 +74,44 @@ const upsertCatalogoItem = async (input: CreateCatalogoItemInput) => {
   }
 
   return createCatalogoItem(input);
+};
+
+const seedFacturaDemo = async (clienteId: string, motocicletaId: string, catalogoItems: Awaited<ReturnType<typeof upsertCatalogoItem>>[]) => {
+  const existingFactura = (await listFacturas({ search: "FV-" })).find(
+    (factura) => factura.numero === "FV-000001",
+  );
+
+  if (existingFactura) {
+    return;
+  }
+
+  const existingOrden = (await listOrdenes({})).find((orden) => orden.numero.startsWith("OS-"));
+  const servicio = catalogoItems.find((item) => item.tipo === "SERVICIO");
+  const repuesto = catalogoItems.find((item) => item.tipo === "REPUESTO");
+
+  if (!servicio || !repuesto) {
+    return;
+  }
+
+  const orden =
+    existingOrden ??
+    (await createOrden({
+      clienteId,
+      motocicletaId,
+      kilometrajeIngreso: 25000,
+      motivoIngreso: "Mantenimiento preventivo demo",
+      observaciones: "Orden demo para facturacion interna",
+      estado: "FINALIZADA",
+      detalles: [
+        { itemCatalogoId: servicio.id, cantidad: 1 },
+        { itemCatalogoId: repuesto.id, cantidad: 1 },
+      ],
+    }));
+
+  await createFacturaFromOrden({
+    ordenId: orden.id,
+    formaPago: "CONTADO",
+  });
 };
 
 const clientes: CreateClienteInput[] = [
@@ -178,7 +218,7 @@ const seed = async () => {
 
   const [clienteNatural, clienteEmpresa] = await Promise.all(clientes.map(upsertCliente));
 
-  await upsertMotocicleta(clienteNatural.id, {
+  const motoNatural = await upsertMotocicleta(clienteNatural.id, {
     placa: "ABC12D",
     marca: "Yamaha",
     modelo: "FZ 2.0",
@@ -208,7 +248,9 @@ const seed = async () => {
     activa: true,
   });
 
-  await Promise.all(catalogo.map(upsertCatalogoItem));
+  const catalogoItems = await Promise.all(catalogo.map(upsertCatalogoItem));
+
+  await seedFacturaDemo(clienteNatural.id, motoNatural.id, catalogoItems);
 
   const totalClientes = await db.orm.public.Clientes.aggregate((aggregate) => ({
     count: aggregate.count(),
