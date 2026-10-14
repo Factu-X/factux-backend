@@ -9,6 +9,8 @@ const envSchema = z.object({
   SUPABASE_PUBLISHABLE_KEY: z
     .string()
     .min(1, "SUPABASE_PUBLISHABLE_KEY es obligatoria"),
+  // Opcional: solo se necesita para crear usuarios en Supabase Auth desde la API.
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

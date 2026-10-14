@@ -5,6 +5,7 @@ export type ErrorCode =
   | "FORBIDDEN"
   | "NOT_FOUND"
   | "CONFLICT"
+  | "SERVICE_UNAVAILABLE"
   | "INTERNAL_ERROR";
 
 export class HttpError extends Error {
@@ -26,3 +27,5 @@ export const forbidden = (message = "No tienes permisos para esta accion") =>
 export const notFound = (message = "Recurso no encontrado") =>
   new HttpError(404, message, "NOT_FOUND");
 export const conflict = (message: string) => new HttpError(409, message, "CONFLICT");
+export const serviceUnavailable = (message: string) =>
+  new HttpError(503, message, "SERVICE_UNAVAILABLE");

@@ -21,7 +21,8 @@ export const createMotocicletaSchema = z
       ),
     marca: z.string().trim().min(1).max(100),
     modelo: z.string().trim().min(1).max(100),
-    anio: z.number().int().min(1900).max(2100).nullable().optional(),
+    // HU-04: placa, marca, modelo y anio son el minimo de una motocicleta.
+    anio: z.number().int().min(1900).max(2100),
     cilindraje: z.number().int().positive().nullable().optional(),
     kilometrajeActual: z.number().int().nonnegative().nullable().optional(),
     activa: z.boolean().optional(),

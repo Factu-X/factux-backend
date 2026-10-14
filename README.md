@@ -8,7 +8,8 @@ Implementado:
 
 - Autenticacion con Supabase Auth y JWT Bearer.
 - Perfil y rol desde `public.profiles`.
-- RBAC con roles `ADMINISTRADOR` y `OPERADOR`.
+- RBAC con roles `ADMINISTRADOR`, `FACTURACION` y `OPERADOR`.
+- Gestion de usuarios (crear en Supabase Auth, cambiar rol, activar/desactivar).
 - Clientes.
 - Motocicletas.
 - Catalogo de servicios/repuestos.
@@ -26,7 +27,6 @@ No implementado todavia:
 - Notas credito.
 - Cuentas por cobrar.
 - Dashboard real.
-- Administracion completa de usuarios desde API propia.
 
 ## Stack
 
@@ -75,6 +75,8 @@ PORT=4000
 DATABASE_URL="postgresql://..."
 SUPABASE_URL="https://tu-proyecto.supabase.co"
 SUPABASE_PUBLISHABLE_KEY="..."
+# Solo para POST /api/usuarios. Sin ella el resto de la API funciona y crear usuarios responde 503.
+SUPABASE_SERVICE_ROLE_KEY="..."
 ```
 
 No commitear `.env`. No exponer `SERVICE_ROLE_KEY` al frontend.
@@ -93,6 +95,14 @@ La forma recomendada es:
 3. Configurar GitHub Actions con GitHub Secrets/Variables, no con archivos `.env`.
 
 Evitar mandar `.env` por WhatsApp si contiene `DATABASE_URL`, passwords o secret keys. Si se manda por urgencia, rotar credenciales despues.
+
+## Cambios Manuales De Base De Datos
+
+`db/manual/` guarda SQL aplicado a mano en Supabase cuando `prisma db update` propone operaciones
+destructivas (por ejemplo, borrar `profiles_id_fkey`, que apunta a `auth.users` fuera del contrato).
+Despues de aplicarlo: `npx prisma db sign`.
+
+- `2026-10-14-add-rol-facturacion.sql` (aplicado el 2026-10-14).
 
 ## Comandos
 
@@ -206,6 +216,12 @@ Ordenes:
 - `PATCH /api/ordenes/:id/detalles/:detalleId`
 - `DELETE /api/ordenes/:id/detalles/:detalleId`
 
+Usuarios (solo `ADMINISTRADOR`):
+
+- `GET /api/usuarios`
+- `POST /api/usuarios` (`nombre`, `email`, `password`, `rol`)
+- `PATCH /api/usuarios/:id` (`nombre`, `rol`, `activo`)
+
 Facturas internas:
 
 - `GET /api/facturas`
@@ -221,8 +237,15 @@ Authorization: Bearer <JWT>
 
 ## Roles
 
-- `ADMINISTRADOR`: acceso completo, incluida escritura de catalogo.
-- `OPERADOR`: clientes, motocicletas, lectura de catalogo, ordenes y facturas.
+| Recurso | ADMINISTRADOR | FACTURACION | OPERADOR |
+|---|---|---|---|
+| Usuarios | CRUD | - | - |
+| Catalogo | CRUD | lectura | lectura |
+| Clientes / motocicletas | CRUD | CRUD | lectura |
+| Ordenes | CRUD | CRUD | lectura, estado (sin cancelar), observaciones, detalles |
+| Facturas | CRUD | CRUD | - |
+
+La matriz completa esta cubierta por `tests/rbac.routes.test.ts`.
 
 El middleware valida el JWT con Supabase Auth, consulta `public.profiles`, exige `activo = true` y adjunta `req.user`.
 
@@ -235,6 +258,10 @@ El middleware valida el JWT con Supabase Auth, consulta `public.profiles`, exige
 - Detalles de orden toman snapshot desde `items_catalogo`.
 - Totales de orden se calculan en backend.
 - Ordenes `FINALIZADAS` y `CANCELADAS` no admiten cambios de detalles.
+- Estados: `ABIERTA -> EN_PROCESO -> FINALIZADA`, `EN_PROCESO -> ABIERTA`, y `CANCELADA` desde abierta o en proceso.
+- Una orden se crea `ABIERTA` o `EN_PROCESO`; no se puede finalizar sin detalles.
+- `GET /api/ordenes` y `GET /api/ordenes/:id` incluyen `cliente` y `motocicleta`.
+- Un administrador no puede desactivarse ni cambiarse el rol a si mismo.
 - Facturas se generan solo desde ordenes `FINALIZADAS`.
 - Una orden solo puede tener una factura.
 - Facturas actuales son internas: quedan `estadoDian = PENDIENTE_ENVIO`.
@@ -285,7 +312,6 @@ tests/
 
 ## Pendientes Para El Equipo
 
-- Crear endpoints seguros para gestion real de usuarios usando Supabase Admin desde backend.
 - Conectar dashboard a consultas reales de resumen.
 - Crear endpoint de resumen para KPIs.
 - Agregar filtros/paginacion en listados grandes.

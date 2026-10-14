@@ -450,6 +450,7 @@ namespace public {
   native_enum RolUsuario {
     ADMINISTRADOR = "ADMINISTRADOR"
     OPERADOR = "OPERADOR"
+    FACTURACION = "FACTURACION"
     @@map("rol_usuario")
   }
 

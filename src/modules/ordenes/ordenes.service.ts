@@ -6,7 +6,11 @@ import { badRequest, conflict, notFound } from "../../shared/http-error.js";
 import { numeric, varchar } from "../../shared/prisma-types.js";
 import { nowInstant, parseInstant } from "../../shared/time.js";
 import { calculateDetalle, sumCalculatedDetalles } from "./ordenes.calculations.js";
-import { assertOrdenEditable } from "./ordenes.policy.js";
+import {
+  assertOrdenEditable,
+  assertOrdenFinalizable,
+  assertTransicionOrden,
+} from "./ordenes.policy.js";
 import type {
   CreateOrdenDetalleInput,
   CreateOrdenInput,
@@ -124,9 +128,13 @@ const buildDetalleSnapshot = async (input: CreateOrdenDetalleInput, client: DbCo
   };
 };
 
+// Cliente y moto viajan con la orden para que listados e historial no hagan N+1 requests.
+const ordenesConRelaciones = () =>
+  db.orm.public.OrdenesServicio.include("cliente").include("motocicleta");
+
 export const listOrdenes = (query: OrdenesQuery) => {
   if (query.estado || query.clienteId || query.motocicletaId) {
-    return db.orm.public.OrdenesServicio
+    return ordenesConRelaciones()
       .where((orden) =>
         and(
           query.estado ? orden.estado.eq(query.estado) : orden.id.isNotNull(),
@@ -140,10 +148,18 @@ export const listOrdenes = (query: OrdenesQuery) => {
       .all();
   }
 
-  return db.orm.public.OrdenesServicio.orderBy((orden) => orden.fechaIngreso.desc()).all();
+  return ordenesConRelaciones().orderBy((orden) => orden.fechaIngreso.desc()).all();
 };
 
-export const getOrdenById = (id: string) => getOrdenByIdWithClient(id);
+export const getOrdenById = async (id: string) => {
+  const orden = await ordenesConRelaciones().where({ id }).first();
+
+  if (!orden) {
+    throw notFound("Orden de servicio no encontrada");
+  }
+
+  return orden;
+};
 
 export const listDetallesOrden = async (ordenId: string) => {
   await getOrdenByIdWithClient(ordenId);
@@ -194,7 +210,7 @@ export const createOrden = async (input: CreateOrdenInput, creadaPor?: string) =
         subtotal: numeric<14, 2>("0.00"),
         impuestos: numeric<14, 2>("0.00"),
         total: numeric<14, 2>("0.00"),
-        finalizadaAt: estado === "FINALIZADA" ? nowInstant() : null,
+        finalizadaAt: null,
       });
 
       for (const detalleInput of input.detalles ?? []) {
@@ -231,6 +247,12 @@ export const updateOrden = async (id: string, input: UpdateOrdenInput) =>
     await assertMotocicletaBelongsToCliente(clienteId, motocicletaId, tx);
 
     const nextEstado = input.estado ?? existing.estado;
+    assertTransicionOrden(existing.estado, nextEstado);
+
+    if (nextEstado === "FINALIZADA") {
+      const detalles = await tx.orm.public.DetallesOrden.where({ ordenId: id }).all();
+      assertOrdenFinalizable(detalles.length);
+    }
 
     await tx.orm.public.OrdenesServicio.where({ id }).update({
       clienteId,
@@ -259,10 +281,6 @@ export const updateOrden = async (id: string, input: UpdateOrdenInput) =>
         input.kilometrajeIngreso ?? existing.kilometrajeIngreso,
         tx,
       );
-    }
-
-    if (nextEstado === "CANCELADA") {
-      return getOrdenByIdWithClient(id, tx);
     }
 
     return getOrdenByIdWithClient(id, tx);

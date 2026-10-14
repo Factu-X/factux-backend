@@ -20,28 +20,28 @@ facturasRouter.use(authenticate);
 
 facturasRouter.get(
   "/",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION"),
   validateRequest({ query: facturasQuerySchema }),
   listFacturasController,
 );
 
 facturasRouter.get(
   "/:id",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION"),
   validateRequest({ params: facturaIdParamsSchema }),
   getFacturaController,
 );
 
 facturasRouter.get(
   "/:id/detalles",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION"),
   validateRequest({ params: facturaIdParamsSchema }),
   listDetallesFacturaController,
 );
 
 facturasRouter.post(
   "/",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION"),
   validateRequest({ body: createFacturaSchema }),
   createFacturaController,
 );

@@ -21,14 +21,14 @@ catalogoRouter.use(authenticate);
 
 catalogoRouter.get(
   "/",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION", "OPERADOR"),
   validateRequest({ query: catalogoQuerySchema }),
   listCatalogoController,
 );
 
 catalogoRouter.get(
   "/:id",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION", "OPERADOR"),
   validateRequest({ params: catalogoIdParamsSchema }),
   getCatalogoItemController,
 );

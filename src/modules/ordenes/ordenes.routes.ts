@@ -28,49 +28,49 @@ ordenesRouter.use(authenticate);
 
 ordenesRouter.get(
   "/",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION", "OPERADOR"),
   validateRequest({ query: ordenesQuerySchema }),
   listOrdenesController,
 );
 
 ordenesRouter.get(
   "/:id",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION", "OPERADOR"),
   validateRequest({ params: ordenIdParamsSchema }),
   getOrdenController,
 );
 
 ordenesRouter.post(
   "/",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION"),
   validateRequest({ body: createOrdenSchema }),
   createOrdenController,
 );
 
 ordenesRouter.patch(
   "/:id",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION", "OPERADOR"),
   validateRequest({ params: ordenIdParamsSchema, body: updateOrdenSchema }),
   updateOrdenController,
 );
 
 ordenesRouter.get(
   "/:id/detalles",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION", "OPERADOR"),
   validateRequest({ params: ordenIdParamsSchema }),
   listDetallesOrdenController,
 );
 
 ordenesRouter.post(
   "/:id/detalles",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION", "OPERADOR"),
   validateRequest({ params: ordenIdParamsSchema, body: createOrdenDetalleSchema }),
   addDetalleOrdenController,
 );
 
 ordenesRouter.patch(
   "/:id/detalles/:detalleId",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION", "OPERADOR"),
   validateRequest({
     params: ordenDetalleIdParamsSchema,
     body: updateOrdenDetalleSchema,
@@ -80,7 +80,7 @@ ordenesRouter.patch(
 
 ordenesRouter.delete(
   "/:id/detalles/:detalleId",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION", "OPERADOR"),
   validateRequest({ params: ordenDetalleIdParamsSchema }),
   deleteDetalleOrdenController,
 );
