@@ -32,11 +32,19 @@ namespace public {
     telefono           VarChar(30)?
     email              VarChar(200)?
     regimenFiscal      VarChar(150)?      @map("regimen_fiscal")
+    nombreComercial    VarChar(200)?      @map("nombre_comercial")
+    tipoPersona        VarChar(10)        @default("JURIDICA") @map("tipo_persona")
+    responsabilidadesFiscales VarChar(100)? @map("responsabilidades_fiscales")
+    ciudad             VarChar(100)?
+    departamento       VarChar(100)?
+    codigoMunicipio    VarChar(5)?        @map("codigo_municipio")
     createdAt          Timestamptz        @default(now()) @map("created_at")
     updatedAt          Timestamptz        @default(now()) @map("updated_at")
     configuracionDian  ConfiguracionDian?
 
     @@check(expression: "(singleton = true)", map: "configuracion_empresa_singleton_check")
+    @@check(expression: "((tipo_persona)::text = ANY ((ARRAY['JURIDICA'::character varying, 'NATURAL'::character varying])::text[]))", map: "chk_empresa_tipo_persona")
+    @@check(expression: "((codigo_municipio IS NULL) OR ((codigo_municipio)::text ~ '^[0-9]{5}$'::text))", map: "chk_empresa_codigo_municipio")
     @@rls
     @@map("configuracion_empresa")
   }
@@ -55,6 +63,8 @@ namespace public {
     vigenciaHasta      Date?                 @map("vigencia_hasta")
     certificadoPath    String?               @map("certificado_path")
     certificadoExpira  Date?                 @map("certificado_expira")
+    softwareId         VarChar(100)?         @map("software_id")
+    testSetId          VarChar(100)?         @map("test_set_id")
     createdAt          Timestamptz           @default(now()) @map("created_at")
     updatedAt          Timestamptz           @default(now()) @map("updated_at")
     empresa            ConfiguracionEmpresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade, map: "configuracion_dian_empresa_id_fkey")

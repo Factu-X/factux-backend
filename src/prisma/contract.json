@@ -352,6 +352,26 @@
                   "kind": "scalar"
                 }
               },
+              "softwareId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 100
+                  }
+                }
+              },
+              "testSetId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 100
+                  }
+                }
+              },
               "updatedAt": {
                 "nullable": false,
                 "type": {
@@ -430,6 +450,12 @@
                 "rangoHasta": {
                   "column": "rango_hasta"
                 },
+                "softwareId": {
+                  "column": "software_id"
+                },
+                "testSetId": {
+                  "column": "test_set_id"
+                },
                 "updatedAt": {
                   "column": "updated_at"
                 },
@@ -446,11 +472,41 @@
           },
           "ConfiguracionEmpresa": {
             "fields": {
+              "ciudad": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 100
+                  }
+                }
+              },
+              "codigoMunicipio": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 5
+                  }
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/timestamptz-temporal@1",
                   "kind": "scalar"
+                }
+              },
+              "departamento": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 100
+                  }
                 }
               },
               "digitoVerificacion": {
@@ -500,6 +556,16 @@
                   }
                 }
               },
+              "nombreComercial": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 200
+                  }
+                }
+              },
               "razonSocial": {
                 "nullable": false,
                 "type": {
@@ -520,6 +586,16 @@
                   }
                 }
               },
+              "responsabilidadesFiscales": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 100
+                  }
+                }
+              },
               "singleton": {
                 "nullable": false,
                 "type": {
@@ -534,6 +610,16 @@
                   "kind": "scalar",
                   "typeParams": {
                     "length": 30
+                  }
+                }
+              },
+              "tipoPersona": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 10
                   }
                 }
               },
@@ -565,8 +651,17 @@
             },
             "storage": {
               "fields": {
+                "ciudad": {
+                  "column": "ciudad"
+                },
+                "codigoMunicipio": {
+                  "column": "codigo_municipio"
+                },
                 "createdAt": {
                   "column": "created_at"
+                },
+                "departamento": {
+                  "column": "departamento"
                 },
                 "digitoVerificacion": {
                   "column": "digito_verificacion"
@@ -583,17 +678,26 @@
                 "nit": {
                   "column": "nit"
                 },
+                "nombreComercial": {
+                  "column": "nombre_comercial"
+                },
                 "razonSocial": {
                   "column": "razon_social"
                 },
                 "regimenFiscal": {
                   "column": "regimen_fiscal"
                 },
+                "responsabilidadesFiscales": {
+                  "column": "responsabilidades_fiscales"
+                },
                 "singleton": {
                   "column": "singleton"
                 },
                 "telefono": {
                   "column": "telefono"
+                },
+                "tipoPersona": {
+                  "column": "tipo_persona"
                 },
                 "updatedAt": {
                   "column": "updated_at"
@@ -3503,6 +3607,22 @@
                   "nativeType": "int4",
                   "nullable": true
                 },
+                "software_id": {
+                  "codecId": "sql/varchar@1",
+                  "nativeType": "character varying",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 100
+                  }
+                },
+                "test_set_id": {
+                  "codecId": "sql/varchar@1",
+                  "nativeType": "character varying",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 100
+                  }
+                },
                 "updated_at": {
                   "codecId": "pg/timestamptz-temporal@1",
                   "default": {
@@ -3562,11 +3682,35 @@
             "configuracion_empresa": {
               "checks": [
                 {
+                  "expression": "((codigo_municipio IS NULL) OR ((codigo_municipio)::text ~ '^[0-9]{5}$'::text))",
+                  "name": "chk_empresa_codigo_municipio"
+                },
+                {
+                  "expression": "((tipo_persona)::text = ANY ((ARRAY['JURIDICA'::character varying, 'NATURAL'::character varying])::text[]))",
+                  "name": "chk_empresa_tipo_persona"
+                },
+                {
                   "expression": "(singleton = true)",
                   "name": "configuracion_empresa_singleton_check"
                 }
               ],
               "columns": {
+                "ciudad": {
+                  "codecId": "sql/varchar@1",
+                  "nativeType": "character varying",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 100
+                  }
+                },
+                "codigo_municipio": {
+                  "codecId": "sql/varchar@1",
+                  "nativeType": "character varying",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 5
+                  }
+                },
                 "created_at": {
                   "codecId": "pg/timestamptz-temporal@1",
                   "default": {
@@ -3575,6 +3719,14 @@
                   },
                   "nativeType": "timestamptz",
                   "nullable": false
+                },
+                "departamento": {
+                  "codecId": "sql/varchar@1",
+                  "nativeType": "character varying",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 100
+                  }
                 },
                 "digito_verificacion": {
                   "codecId": "sql/varchar@1",
@@ -3617,6 +3769,14 @@
                     "length": 20
                   }
                 },
+                "nombre_comercial": {
+                  "codecId": "sql/varchar@1",
+                  "nativeType": "character varying",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 200
+                  }
+                },
                 "razon_social": {
                   "codecId": "sql/varchar@1",
                   "nativeType": "character varying",
@@ -3631,6 +3791,14 @@
                   "nullable": true,
                   "typeParams": {
                     "length": 150
+                  }
+                },
+                "responsabilidades_fiscales": {
+                  "codecId": "sql/varchar@1",
+                  "nativeType": "character varying",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 100
                   }
                 },
                 "singleton": {
@@ -3648,6 +3816,18 @@
                   "nullable": true,
                   "typeParams": {
                     "length": 30
+                  }
+                },
+                "tipo_persona": {
+                  "codecId": "sql/varchar@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "JURIDICA"
+                  },
+                  "nativeType": "character varying",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 10
                   }
                 },
                 "updated_at": {
@@ -6032,7 +6212,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "6be4f5efd8b0c7c3c0a43c34daa071143da55a635bdb9086c32472ad6022495b"
+    "storageHash": "34b579c8070956d2e734733f5626398a0f630cac06caf3f11b203b5ac95a4d13"
   },
   "capabilities": {
     "postgres": {

@@ -5,6 +5,7 @@ import { validateRequest } from "../../middlewares/validate-request.js";
 import {
   createFacturaController,
   getFacturaController,
+  getFacturaXmlController,
   listDetallesFacturaController,
   listFacturasController,
 } from "./facturas.controller.js";
@@ -39,6 +40,14 @@ facturasRouter.get(
   listDetallesFacturaController,
 );
 
+facturasRouter.get(
+  "/:id/xml",
+  requireRole("ADMINISTRADOR", "FACTURACION"),
+  validateRequest({ params: facturaIdParamsSchema }),
+  getFacturaXmlController,
+);
+
+// Una factura confirmada no se modifica: no existen rutas PATCH/PUT/DELETE (HU-06).
 facturasRouter.post(
   "/",
   requireRole("ADMINISTRADOR", "FACTURACION"),

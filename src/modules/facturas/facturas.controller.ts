@@ -6,6 +6,7 @@ import type { CreateFacturaInput, FacturaIdParams, FacturasQuery } from "./factu
 import {
   createFacturaFromOrden,
   getFacturaById,
+  getFacturaXml,
   listDetallesFactura,
   listFacturas,
 } from "./facturas.service.js";
@@ -30,4 +31,13 @@ export const listDetallesFacturaController: RequestHandler = asyncHandler(async 
 export const createFacturaController: RequestHandler = asyncHandler(async (req, res) => {
   const factura = await createFacturaFromOrden(req.body as CreateFacturaInput, req.user?.id);
   res.status(201).json({ data: factura });
+});
+
+export const getFacturaXmlController: RequestHandler = asyncHandler(async (req, res) => {
+  const { id } = req.params as FacturaIdParams;
+  const { numero, xml } = await getFacturaXml(id);
+  res
+    .type("application/xml")
+    .attachment(`${numero}.xml`)
+    .send(xml);
 });
