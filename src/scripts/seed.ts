@@ -14,7 +14,7 @@ import {
   updateMotocicleta,
 } from "../modules/motocicletas/motocicletas.service.js";
 import type { CreateMotocicletaInput } from "../modules/motocicletas/motocicletas.schemas.js";
-import { createOrden, listOrdenes } from "../modules/ordenes/ordenes.service.js";
+import { createOrden, listOrdenes, updateOrden } from "../modules/ordenes/ordenes.service.js";
 import { createFacturaFromOrden, listFacturas } from "../modules/facturas/facturas.service.js";
 
 const seedEmpresa = async () => {
@@ -93,23 +93,27 @@ const seedFacturaDemo = async (clienteId: string, motocicletaId: string, catalog
     return;
   }
 
-  const orden =
-    existingOrden ??
-    (await createOrden({
+  let ordenId = existingOrden?.id;
+
+  if (!ordenId) {
+    const creada = await createOrden({
       clienteId,
       motocicletaId,
       kilometrajeIngreso: 25000,
       motivoIngreso: "Mantenimiento preventivo demo",
       observaciones: "Orden demo para facturacion interna",
-      estado: "FINALIZADA",
+      estado: "EN_PROCESO",
       detalles: [
         { itemCatalogoId: servicio.id, cantidad: 1 },
         { itemCatalogoId: repuesto.id, cantidad: 1 },
       ],
-    }));
+    });
+    await updateOrden(creada.id, { estado: "FINALIZADA" });
+    ordenId = creada.id;
+  }
 
   await createFacturaFromOrden({
-    ordenId: orden.id,
+    ordenId,
     formaPago: "CONTADO",
   });
 };

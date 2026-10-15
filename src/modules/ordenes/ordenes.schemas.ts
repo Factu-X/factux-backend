@@ -19,6 +19,12 @@ const decimalInputSchema = z.union([
     }, "Debe ser un decimal no negativo con maximo 2 decimales"),
 ]);
 
+// HU-03: la BD exige cantidad > 0; se valida aqui para responder 400 y no 500.
+const cantidadSchema = decimalInputSchema.refine(
+  (value) => Number(value) > 0,
+  "La cantidad debe ser mayor a 0",
+);
+
 const isoInstantSchema = z
   .string()
   .trim()
@@ -42,14 +48,14 @@ export const ordenesQuerySchema = z.object({
 export const createOrdenDetalleSchema = z
   .object({
     itemCatalogoId: z.uuid(),
-    cantidad: decimalInputSchema.default(1),
+    cantidad: cantidadSchema.default(1),
     precioAplicado: decimalInputSchema.optional(),
   })
   .strict();
 
 export const updateOrdenDetalleSchema = z
   .object({
-    cantidad: decimalInputSchema.optional(),
+    cantidad: cantidadSchema.optional(),
     precioAplicado: decimalInputSchema.optional(),
   })
   .strict()
@@ -65,7 +71,7 @@ export const createOrdenSchema = z
     kilometrajeIngreso: z.number().int().nonnegative(),
     motivoIngreso: z.string().trim().min(3),
     observaciones: z.string().trim().nullable().optional(),
-    estado: estadoOrdenSchema.optional(),
+    estado: z.enum(["ABIERTA", "EN_PROCESO"]).optional(),
     detalles: z.array(createOrdenDetalleSchema).optional(),
   })
   .strict();

@@ -21,28 +21,28 @@ clientesRouter.use(authenticate);
 
 clientesRouter.get(
   "/",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION", "OPERADOR"),
   validateRequest({ query: clientesQuerySchema }),
   listClientesController,
 );
 
 clientesRouter.get(
   "/:id",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION", "OPERADOR"),
   validateRequest({ params: clienteIdParamsSchema }),
   getClienteController,
 );
 
 clientesRouter.post(
   "/",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION"),
   validateRequest({ body: createClienteSchema }),
   createClienteController,
 );
 
 clientesRouter.patch(
   "/:id",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION"),
   validateRequest({ params: clienteIdParamsSchema, body: updateClienteSchema }),
   updateClienteController,
 );

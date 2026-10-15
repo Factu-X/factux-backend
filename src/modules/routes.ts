@@ -9,6 +9,7 @@ import {
   motocicletasRouter,
 } from "./motocicletas/motocicletas.routes.js";
 import { ordenesRouter } from "./ordenes/ordenes.routes.js";
+import { usuariosRouter } from "./usuarios/usuarios.routes.js";
 
 export const apiRouter = Router();
 
@@ -19,3 +20,4 @@ apiRouter.use("/motocicletas", motocicletasRouter);
 apiRouter.use("/catalogo", catalogoRouter);
 apiRouter.use("/ordenes", ordenesRouter);
 apiRouter.use("/facturas", facturasRouter);
+apiRouter.use("/usuarios", usuariosRouter);

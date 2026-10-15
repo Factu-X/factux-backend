@@ -34,7 +34,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'6f7839bdf6c133cc4fa293e2528c5173357fb80f9fd655e68e1b72536a648ad7'>;
+  StorageHashBase<'6be4f5efd8b0c7c3c0a43c34daa071143da55a635bdb9086c32472ad6022495b'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -436,7 +436,7 @@ export type FieldOutputTypes = {
     readonly Profiles: {
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly nombre: Varchar<150>;
-      readonly rol: 'ADMINISTRADOR' | 'OPERADOR';
+      readonly rol: 'ADMINISTRADOR' | 'OPERADOR' | 'FACTURACION';
       readonly activo: CodecTypes['pg/bool@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
@@ -655,7 +655,7 @@ export type FieldInputTypes = {
     readonly Profiles: {
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly nombre: CodecTypes['sql/varchar@1']['input'];
-      readonly rol: 'ADMINISTRADOR' | 'OPERADOR';
+      readonly rol: 'ADMINISTRADOR' | 'OPERADOR' | 'FACTURACION';
       readonly activo: CodecTypes['pg/bool@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
@@ -876,7 +876,7 @@ export type StorageColumnTypes = {
       readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly nombre: Varchar<150>;
-      readonly rol: 'ADMINISTRADOR' | 'OPERADOR';
+      readonly rol: 'ADMINISTRADOR' | 'OPERADOR' | 'FACTURACION';
       readonly updated_at: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
     readonly recordatorios_mantenimiento: {
@@ -1095,7 +1095,7 @@ export type StorageColumnInputTypes = {
       readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly nombre: CodecTypes['sql/varchar@1']['input'];
-      readonly rol: 'ADMINISTRADOR' | 'OPERADOR';
+      readonly rol: 'ADMINISTRADOR' | 'OPERADOR' | 'FACTURACION';
       readonly updated_at: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
     readonly recordatorios_mantenimiento: {
@@ -1203,7 +1203,7 @@ export namespace Models {
   export type public_Profiles = {
     id: CodecTypes['pg/uuid@1']['output'];
     nombre: Varchar<150>;
-    rol: 'ADMINISTRADOR' | 'OPERADOR';
+    rol: 'ADMINISTRADOR' | 'OPERADOR' | 'FACTURACION';
     activo: CodecTypes['pg/bool@1']['output'];
     createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
@@ -3305,7 +3305,7 @@ type ContractBase = Omit<
             };
             readonly RolUsuario: {
               readonly kind: 'valueSet';
-              readonly values: readonly ['ADMINISTRADOR', 'OPERADOR'];
+              readonly values: readonly ['ADMINISTRADOR', 'OPERADOR', 'FACTURACION'];
             };
             readonly TipoAjusteNota: {
               readonly kind: 'valueSet';

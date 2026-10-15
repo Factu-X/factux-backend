@@ -1,6 +1,7 @@
 import type { RequestHandler } from "express";
 
 import { asyncHandler } from "../../shared/async-handler.js";
+import { assertRolPuedeActualizarOrden } from "./ordenes.policy.js";
 import { ordenesQuerySchema } from "./ordenes.schemas.js";
 import type {
   CreateOrdenDetalleInput,
@@ -40,7 +41,13 @@ export const createOrdenController: RequestHandler = asyncHandler(async (req, re
 
 export const updateOrdenController: RequestHandler = asyncHandler(async (req, res) => {
   const { id } = req.params as OrdenIdParams;
-  const orden = await updateOrden(id, req.body as UpdateOrdenInput);
+  const input = req.body as UpdateOrdenInput;
+
+  if (req.user) {
+    assertRolPuedeActualizarOrden(req.user.rol, input);
+  }
+
+  const orden = await updateOrden(id, input);
   res.json({ data: orden });
 });
 

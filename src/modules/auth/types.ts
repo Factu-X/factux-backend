@@ -1,1 +1,1 @@
-export type RolUsuario = "ADMINISTRADOR" | "OPERADOR";
+export type RolUsuario = "ADMINISTRADOR" | "OPERADOR" | "FACTURACION";

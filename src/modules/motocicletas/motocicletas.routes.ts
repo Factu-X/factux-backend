@@ -23,14 +23,14 @@ clienteMotocicletasRouter.use(authenticate);
 
 clienteMotocicletasRouter.get(
   "/",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION", "OPERADOR"),
   validateRequest({ params: clienteMotocicletasParamsSchema }),
   listMotocicletasByClienteController,
 );
 
 clienteMotocicletasRouter.post(
   "/",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION"),
   validateRequest({
     params: clienteMotocicletasParamsSchema,
     body: createMotocicletaSchema,
@@ -40,14 +40,14 @@ clienteMotocicletasRouter.post(
 
 motocicletasRouter.get(
   "/:id",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION", "OPERADOR"),
   validateRequest({ params: motocicletaIdParamsSchema }),
   getMotocicletaController,
 );
 
 motocicletasRouter.patch(
   "/:id",
-  requireRole("ADMINISTRADOR", "OPERADOR"),
+  requireRole("ADMINISTRADOR", "FACTURACION"),
   validateRequest({ params: motocicletaIdParamsSchema, body: updateMotocicletaSchema }),
   updateMotocicletaController,
 );
