@@ -27,13 +27,16 @@ export const authenticate: RequestHandler = async (req, _res, next) => {
       throw unauthorized();
     }
 
-    const { data, error } = await supabase.auth.getUser(token);
+    // getClaims verifica la firma localmente con las llaves publicas del proyecto (JWKS en cache),
+    // sin ir a Supabase en cada peticion. Desactivar un usuario sigue siendo inmediato: ver profile.activo.
+    const { data, error } = await supabase.auth.getClaims(token);
+    const userId = data?.claims.sub;
 
-    if (error || !data.user) {
+    if (error || !userId) {
       throw unauthorized("Token invalido o expirado");
     }
 
-    const profile = await db.orm.public.Profiles.first({ id: data.user.id });
+    const profile = await db.orm.public.Profiles.first({ id: userId });
 
     if (!profile) {
       throw unauthorized("El usuario autenticado no tiene profile asociado");

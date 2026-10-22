@@ -103,4 +103,19 @@ describe("evaluarConfiguracion", () => {
     expect(estado).toMatchObject({ puedeEmitir: true, puedeTransmitir: false });
     expect(estado.faltantesTransmision).toContain("Certificado digital");
   });
+
+  it("warns without blocking when the resolution is about to expire or run out", () => {
+    const estado = evaluarConfiguracion(
+      empresa,
+      { ...numeracion, vigenciaHasta: Temporal.PlainDate.from(HOY).add({ days: 10 }).toString(), consecutivoActual: 95 },
+      todos,
+      HOY,
+    );
+    expect(estado.puedeEmitir).toBe(true);
+    expect(estado.advertencias).toEqual([
+      "Quedan 5 numero(s) en el rango autorizado",
+      "La resolucion vence en 10 dia(s)",
+    ]);
+    expect(evaluarConfiguracion(empresa, numeracion, todos, HOY).advertencias).toEqual([]);
+  });
 });

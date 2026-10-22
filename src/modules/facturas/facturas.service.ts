@@ -1,11 +1,11 @@
-import { or } from "@prisma/orm-postgres/orm-client";
+import { and, or } from "@prisma/orm-postgres/orm-client";
 
 import { db } from "../../prisma/db.js";
 import { isUniqueConstraintError } from "../../shared/db-errors.js";
 import { decimalFromScale } from "../../shared/decimal.js";
 import { badRequest, conflict, notFound } from "../../shared/http-error.js";
 import { numeric, nullableVarchar, varchar } from "../../shared/prisma-types.js";
-import { nowInstant, ZONA_COLOMBIA } from "../../shared/time.js";
+import { hoyColombia, nowInstant, ZONA_COLOMBIA } from "../../shared/time.js";
 import { siguienteConsecutivo } from "../configuracion/configuracion.rules.js";
 import {
   BUCKET_PRIVADO,
@@ -43,16 +43,21 @@ const getFacturaByIdWithClient = async (id: string, client: DbContext = db) => {
 const facturasConRelaciones = () => db.orm.public.Facturas.include("cliente").include("orden");
 
 export const listFacturas = (query: FacturasQuery) => {
-  if (query.search) {
-    const search = `%${query.search}%`;
+  const search = query.search ? `%${query.search}%` : null;
 
-    return facturasConRelaciones()
-      .where((factura) => or(factura.numero.ilike(search), factura.cufe.ilike(search)))
-      .orderBy((factura) => factura.fechaEmision.desc())
-      .all();
-  }
-
-  return facturasConRelaciones().orderBy((factura) => factura.fechaEmision.desc()).all();
+  return facturasConRelaciones()
+    .where((factura) =>
+      and(
+        search ? or(factura.numero.ilike(search), factura.cufe.ilike(search)) : factura.id.isNotNull(),
+        query.estadoDian ? factura.estadoDian.eq(query.estadoDian) : factura.id.isNotNull(),
+        query.clienteId ? factura.clienteId.eq(query.clienteId) : factura.id.isNotNull(),
+        query.formaPago ? factura.formaPago.eq(query.formaPago) : factura.id.isNotNull(),
+      ),
+    )
+    .orderBy((factura) => factura.fechaEmision.desc())
+    .limit(query.limit)
+    .offset(query.offset)
+    .all();
 };
 
 export const getFacturaById = async (id: string) => {
@@ -86,6 +91,14 @@ const fechaHoraColombia = (instant: Temporal.Instant) => {
 const xmlPath = (numero: string) => `facturas/${numero}.xml`;
 
 export const createFacturaFromOrden = async (input: CreateFacturaInput, creadaPor?: string) => {
+  // De contado vence el mismo dia: la fecha de vencimiento solo aplica a credito.
+  const fechaVencimiento =
+    input.formaPago === "CREDITO" ? parsePlainDate(input.fechaVencimiento) : null;
+
+  if (fechaVencimiento && fechaVencimiento.toString() < hoyColombia()) {
+    throw badRequest("fechaVencimiento no puede ser anterior a hoy");
+  }
+
   // HU-13: sin configuracion minima (empresa, resolucion vigente, clave tecnica, software) no se emite.
   const config = await getConfiguracionEmision();
   const storage = requireSecretsClient().storage.from(BUCKET_PRIVADO);
@@ -153,7 +166,6 @@ export const createFacturaFromOrden = async (input: CreateFacturaInput, creadaPo
       const numero = `${prefijo ?? ""}${consecutivo}`;
       const fechaEmision = nowInstant();
       const { fecha, hora } = fechaHoraColombia(fechaEmision);
-      const fechaVencimiento = parsePlainDate(input.fechaVencimiento);
       const { empresa } = config;
 
       const { cufe, xml, totales } = buildFacturaXml({

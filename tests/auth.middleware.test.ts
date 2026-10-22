@@ -2,12 +2,12 @@ import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  getUser: vi.fn(),
+  getClaims: vi.fn(),
   findProfile: vi.fn(),
 }));
 
 vi.mock("../src/config/supabase.js", () => ({
-  supabase: { auth: { getUser: mocks.getUser } },
+  supabase: { auth: { getClaims: mocks.getClaims } },
   supabaseAdmin: null,
 }));
 
@@ -19,7 +19,7 @@ const { app } = await import("../src/app.js");
 
 describe("authenticate middleware", () => {
   beforeEach(() => {
-    mocks.getUser.mockReset();
+    mocks.getClaims.mockReset();
     mocks.findProfile.mockReset();
   });
 
@@ -27,15 +27,15 @@ describe("authenticate middleware", () => {
     const response = await request(app).get("/api/auth/me").expect(401);
 
     expect(response.body.error.code).toBe("UNAUTHORIZED");
-    expect(mocks.getUser).not.toHaveBeenCalled();
+    expect(mocks.getClaims).not.toHaveBeenCalled();
   });
 
   it("rejects malformed authorization headers", async () => {
     await request(app).get("/api/auth/me").set("Authorization", "Token abc").expect(401);
   });
 
-  it("rejects tokens that Supabase does not recognize", async () => {
-    mocks.getUser.mockResolvedValue({ data: { user: null }, error: new Error("jwt expired") });
+  it("rejects tokens whose signature or expiry is invalid", async () => {
+    mocks.getClaims.mockResolvedValue({ data: null, error: new Error("jwt expired") });
 
     const response = await request(app)
       .get("/api/auth/me")
@@ -46,14 +46,14 @@ describe("authenticate middleware", () => {
   });
 
   it("rejects users without profile", async () => {
-    mocks.getUser.mockResolvedValue({ data: { user: { id: "u-1" } }, error: null });
+    mocks.getClaims.mockResolvedValue({ data: { claims: { sub: "u-1" } }, error: null });
     mocks.findProfile.mockResolvedValue(null);
 
     await request(app).get("/api/auth/me").set("Authorization", "Bearer ok").expect(401);
   });
 
   it("blocks inactive users", async () => {
-    mocks.getUser.mockResolvedValue({ data: { user: { id: "u-1" } }, error: null });
+    mocks.getClaims.mockResolvedValue({ data: { claims: { sub: "u-1" } }, error: null });
     mocks.findProfile.mockResolvedValue({
       id: "u-1",
       nombre: "Ana",
@@ -70,7 +70,7 @@ describe("authenticate middleware", () => {
   });
 
   it("returns the authenticated profile", async () => {
-    mocks.getUser.mockResolvedValue({ data: { user: { id: "u-1" } }, error: null });
+    mocks.getClaims.mockResolvedValue({ data: { claims: { sub: "u-1" } }, error: null });
     mocks.findProfile.mockResolvedValue({
       id: "u-1",
       nombre: "Ana",

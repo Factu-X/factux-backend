@@ -4,12 +4,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RolUsuario } from "../src/modules/auth/types.js";
 
 const mocks = vi.hoisted(() => ({
-  getUser: vi.fn(),
+  getClaims: vi.fn(),
   findProfile: vi.fn(),
 }));
 
 vi.mock("../src/config/supabase.js", () => ({
-  supabase: { auth: { getUser: mocks.getUser } },
+  supabase: { auth: { getClaims: mocks.getClaims } },
   supabaseAdmin: null,
 }));
 
@@ -33,7 +33,7 @@ const ID = "550e8400-e29b-41d4-a716-446655440000";
 type Method = "get" | "post" | "put" | "patch" | "delete";
 
 const loginAs = (rol: RolUsuario) => {
-  mocks.getUser.mockResolvedValue({ data: { user: { id: ID } }, error: null });
+  mocks.getClaims.mockResolvedValue({ data: { claims: { sub: ID } }, error: null });
   mocks.findProfile.mockResolvedValue({ id: ID, nombre: "Usuario", rol, activo: true });
 };
 
@@ -139,7 +139,7 @@ const matrix: [Method, string, object | undefined, Record<RolUsuario, number>][]
 
 describe("role based access", () => {
   beforeEach(() => {
-    mocks.getUser.mockReset();
+    mocks.getClaims.mockReset();
     mocks.findProfile.mockReset();
   });
 

@@ -1,4 +1,8 @@
 // Reglas puras de HU-13: se prueban sin base de datos.
+import "temporal-polyfill/global";
+
+const DIAS_AVISO_VIGENCIA = 30;
+const PORCENTAJE_AVISO_RANGO = 0.1;
 
 export const SECRETOS = {
   claveTecnica: "factux_dian_clave_tecnica",
@@ -58,6 +62,8 @@ export const evaluarConfiguracion = (
 ) => {
   const faltantesEmision: string[] = [];
   const faltantesTransmision: string[] = [];
+  // No bloquean: avisan que la resolucion esta por vencer o agotarse (HU-13).
+  const advertencias: string[] = [];
 
   if (!empresa) {
     faltantesEmision.push("Datos de la empresa");
@@ -89,13 +95,22 @@ export const evaluarConfiguracion = (
     if (!numeracion.fechaResolucion) faltantesEmision.push("Fecha de resolucion");
     if (numeracion.rangoDesde === null || numeracion.rangoHasta === null) {
       faltantesEmision.push("Rango de numeracion");
-    } else if ((siguienteConsecutivo(numeracion) ?? 0) > numeracion.rangoHasta) {
-      faltantesEmision.push("Rango de numeracion agotado");
+    } else {
+      const disponibles = numeracion.rangoHasta - (siguienteConsecutivo(numeracion) ?? 0) + 1;
+      const tamanoRango = numeracion.rangoHasta - numeracion.rangoDesde + 1;
+      if (disponibles <= 0) {
+        faltantesEmision.push("Rango de numeracion agotado");
+      } else if (disponibles <= Math.ceil(tamanoRango * PORCENTAJE_AVISO_RANGO)) {
+        advertencias.push(`Quedan ${disponibles} numero(s) en el rango autorizado`);
+      }
     }
     if (!numeracion.vigenciaDesde || !numeracion.vigenciaHasta) {
       faltantesEmision.push("Vigencia de la resolucion");
     } else if (hoy < numeracion.vigenciaDesde || hoy > numeracion.vigenciaHasta) {
       faltantesEmision.push("Resolucion fuera de vigencia");
+    } else {
+      const dias = Temporal.PlainDate.from(hoy).until(numeracion.vigenciaHasta).days;
+      if (dias <= DIAS_AVISO_VIGENCIA) advertencias.push(`La resolucion vence en ${dias} dia(s)`);
     }
     if (!numeracion.softwareId) faltantesEmision.push("Software ID");
   }
@@ -118,5 +133,6 @@ export const evaluarConfiguracion = (
     // Transmitir exige ademas todo lo de emision.
     puedeTransmitir: faltantesEmision.length === 0 && faltantesTransmision.length === 0,
     faltantesTransmision,
+    advertencias,
   };
 };
