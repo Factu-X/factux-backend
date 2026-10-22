@@ -77,6 +77,10 @@ SUPABASE_URL="https://tu-proyecto.supabase.co"
 SUPABASE_PUBLISHABLE_KEY="..."
 # Solo para POST /api/usuarios. Sin ella el resto de la API funciona y crear usuarios responde 503.
 SUPABASE_SERVICE_ROLE_KEY="..."
+# Opcionales
+CORS_ORIGINS="http://localhost:5173"   # vacio = cualquier origen (solo desarrollo)
+RATE_LIMIT_PER_MINUTE=300
+DIAN_SOFTWARE_ID="" DIAN_SOFTWARE_PIN="" DIAN_CLAVE_TECNICA="" DIAN_CERT_PATH="" DIAN_CERT_PASSWORD=""
 ```
 
 No commitear `.env`. No exponer `SERVICE_ROLE_KEY` al frontend.
@@ -144,6 +148,7 @@ npm run db:seed
 El seed crea/actualiza:
 
 - empresa demo,
+- resolucion de pruebas DIAN (`SETP`, 990000000-995000000) si no existe,
 - 2 clientes,
 - 3 motocicletas,
 - 8 items de catalogo,
@@ -222,18 +227,73 @@ Usuarios (solo `ADMINISTRADOR`):
 - `POST /api/usuarios` (`nombre`, `email`, `password`, `rol`)
 - `PATCH /api/usuarios/:id` (`nombre`, `rol`, `activo`)
 
-Facturas internas:
+Facturas:
 
-- `GET /api/facturas`
-- `GET /api/facturas/:id`
+- `GET /api/facturas?search=&estadoDian=&clienteId=&formaPago=&limit=50&offset=0` (incluye cliente, orden y moto)
+- `GET /api/facturas/:id` (incluye cliente, orden, moto y detalles con tratamiento de IVA)
 - `GET /api/facturas/:id/detalles`
-- `POST /api/facturas`
+- `POST /api/facturas` (`ordenId`, `formaPago`, `fechaVencimiento` si es credito)
+- `POST /api/facturas/:id/enviar`: genera el XML UBL 2.1 con CUFE, lo firma y lo envia al simulador DIAN. Sirve tambien para reintentar una rechazada.
+- `GET /api/facturas/:id/envios`: historial de intentos con codigo y mensaje de respuesta.
+- `GET /api/facturas/:id/xml`: XML firmado (despues del primer envio).
+- `GET /api/facturas/:id/pdf`: representacion grafica con CUFE y QR (sin CUFE sale marcada "sin validez fiscal").
+
+Notas credito (HU-08):
+
+- `GET /api/notas-credito` y `GET /api/notas-credito/:id`
+- `GET /api/facturas/:id/acreditable`: lo que queda por acreditar de cada linea.
+- `POST /api/notas-credito` (`facturaId`, `tipoAjuste` TOTAL|PARCIAL, `motivo`, `lineas` si es parcial). Solo sobre facturas VALIDADAS; las cantidades no pueden superar lo facturado menos notas anteriores.
+- `POST /api/notas-credito/:id/enviar`, `GET /:id/envios`, `GET /:id/xml`, `GET /:id/pdf`: igual que facturas, con CUDE (SHA-384 con el PIN del software) y concepto de correccion 1 (parcial) o 2 (anulacion).
+
+Cartera (HU-10):
+
+- `GET /api/cartera?filtro=CON_SALDO|VENCIDAS|TODAS`: resumen (por cobrar, vencido, antiguedad 0/1-30/31-60/61-90/+90) y facturas con saldo.
+- `GET /api/facturas/:id/cuenta`: total, notas credito, pagos y saldo de una factura.
+- `POST /api/facturas/:id/pagos` (`monto`, `metodoPago`, `referencia`, `fechaPago`): no permite pagar mas que el saldo ni pagar facturas anuladas.
+- Saldo = total - notas credito VALIDADAS - pagos. Las facturas de contado vencen el dia de emision.
+
+Reporte (HU-09):
+
+- `GET /api/reportes/facturacion?desde=YYYY-MM-DD&hasta=YYYY-MM-DD` (por defecto, el mes en curso): facturado, IVA, notas credito, neto, recaudo, serie diaria, top items y clientes, estados DIAN y la cartera de hoy.
+
+Configuracion (HU-13):
+
+- `GET /api/configuracion` (`ADMINISTRADOR`, `FACTURACION`): empresa, resolucion, si los parametros del software estan configurados y alertas.
+- `PUT /api/configuracion/empresa` (`ADMINISTRADOR`): valida el digito de verificacion del NIT.
+- `PUT /api/configuracion/resolucion` (`ADMINISTRADOR`): prefijo, numero, rango y vigencia. Cambiar resolucion o prefijo reinicia el consecutivo.
 
 Todos los endpoints de negocio requieren:
 
 ```http
 Authorization: Bearer <JWT>
 ```
+
+## Facturacion Electronica (Ambiente Simulado)
+
+El modulo `src/modules/dian/` trabaja como software propio segun el Anexo Tecnico 1.9:
+
+- `ubl.ts` arma el XML UBL 2.1 (DianExtensions, emisor, adquirente, IVA agrupado por tarifa, lineas).
+- `cufe.ts` calcula CUFE/CUDE con SHA-384; un test lo compara con el ejemplo oficial del anexo.
+- `signer.ts` firma XAdES-EPES con la politica de firma v2 de la DIAN, dentro de la segunda `UBLExtension`.
+- `gateway.ts` define `DianGateway`. Hoy lo implementa `SimuladorDianGateway`, que verifica firma, CUFE,
+  totales, rango y lineas, y responde `00` (validada) o `99` (rechazada) con reglas `SIM-*`.
+- Los XML firmados y las respuestas se guardan en `STORAGE_DIR` (por defecto `storage/`, fuera de git).
+
+Preparar el ambiente (genera un certificado autofirmado en `certs/` y las variables `DIAN_*`):
+
+```bash
+npm run dian:setup -- --env
+```
+
+Recorrido completo con resultados visibles (crea, envia y verifica una factura, y deja el XML y el PDF en storage/):
+
+```bash
+npm run verificar:dian                              # factura la primera orden finalizada pendiente
+npm run verificar:dian -- --factura SETP990000000   # solo revisa una factura existente
+```
+
+Para pasar a la DIAN real faltan: NIT habilitado, certificado de una entidad acreditada y una
+implementacion SOAP de `DianGateway`.
 
 ## Roles
 
@@ -264,7 +324,11 @@ El middleware valida el JWT con Supabase Auth, consulta `public.profiles`, exige
 - Un administrador no puede desactivarse ni cambiarse el rol a si mismo.
 - Facturas se generan solo desde ordenes `FINALIZADAS`.
 - Una orden solo puede tener una factura.
-- Facturas actuales son internas: quedan `estadoDian = PENDIENTE_ENVIO`.
+- El numero de factura sale de la resolucion vigente (`prefijo + consecutivo`). Se rechaza si no hay
+  resolucion, si esta vencida o si el rango se agoto. El consecutivo se reserva con un UPDATE condicional,
+  asi dos facturas simultaneas no comparten numero.
+- Las facturas quedan `estadoDian = PENDIENTE_ENVIO` hasta que exista el modulo DIAN (HU-07).
+- Los parametros del software DIAN (`DIAN_*`) viven solo en variables de entorno del backend.
 
 ## GitHub Actions
 

@@ -16,12 +16,16 @@ import {
 import type { CreateMotocicletaInput } from "../modules/motocicletas/motocicletas.schemas.js";
 import { createOrden, listOrdenes, updateOrden } from "../modules/ordenes/ordenes.service.js";
 import { createFacturaFromOrden, listFacturas } from "../modules/facturas/facturas.service.js";
+import {
+  getConfiguracion,
+  updateResolucion,
+} from "../modules/configuracion/configuracion.service.js";
 
 const seedEmpresa = async () => {
   const data = {
     singleton: true,
     nit: varchar<20>("900123456"),
-    digitoVerificacion: nullableVarchar<1>("7"),
+    digitoVerificacion: nullableVarchar<1>("8"),
     razonSocial: varchar<200>("FactuX Moto Center"),
     direccion: nullableVarchar<250>("Calle 10 #20-30"),
     telefono: nullableVarchar<30>("3001234567"),
@@ -76,10 +80,29 @@ const upsertCatalogoItem = async (input: CreateCatalogoItemInput) => {
   return createCatalogoItem(input);
 };
 
+// Resolucion de pruebas con los datos que la DIAN publica para el set de habilitacion.
+// Solo se crea si no existe, para no reiniciar el consecutivo de una base en uso.
+const seedResolucionPruebas = async () => {
+  const { resolucion } = await getConfiguracion();
+
+  if (resolucion) {
+    return;
+  }
+
+  await updateResolucion({
+    ambiente: "HABILITACION",
+    prefijoFacturacion: "SETP",
+    numeroResolucion: "18760000001",
+    fechaResolucion: "2019-01-19",
+    rangoDesde: 990000000,
+    rangoHasta: 995000000,
+    vigenciaDesde: "2019-01-19",
+    vigenciaHasta: "2030-01-19",
+  });
+};
+
 const seedFacturaDemo = async (clienteId: string, motocicletaId: string, catalogoItems: Awaited<ReturnType<typeof upsertCatalogoItem>>[]) => {
-  const existingFactura = (await listFacturas({ search: "FV-" })).find(
-    (factura) => factura.numero === "FV-000001",
-  );
+  const [existingFactura] = await listFacturas({ limit: 1, offset: 0 });
 
   if (existingFactura) {
     return;
@@ -219,6 +242,7 @@ const catalogo: CreateCatalogoItemInput[] = [
 
 const seed = async () => {
   await seedEmpresa();
+  await seedResolucionPruebas();
 
   const [clienteNatural, clienteEmpresa] = await Promise.all(clientes.map(upsertCliente));
 

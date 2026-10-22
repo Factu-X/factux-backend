@@ -4,12 +4,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RolUsuario } from "../src/modules/auth/types.js";
 
 const mocks = vi.hoisted(() => ({
-  getUser: vi.fn(),
+  getClaims: vi.fn(),
   findProfile: vi.fn(),
 }));
 
 vi.mock("../src/config/supabase.js", () => ({
-  supabase: { auth: { getUser: mocks.getUser } },
+  supabase: { auth: { getClaims: mocks.getClaims } },
   supabaseAdmin: null,
 }));
 
@@ -24,15 +24,20 @@ vi.mock("../src/modules/motocicletas/motocicletas.service.js");
 vi.mock("../src/modules/ordenes/ordenes.service.js");
 vi.mock("../src/modules/facturas/facturas.service.js");
 vi.mock("../src/modules/usuarios/usuarios.service.js");
+vi.mock("../src/modules/configuracion/configuracion.service.js");
+vi.mock("../src/modules/dian/dian.service.js");
+vi.mock("../src/modules/notas-credito/notas-credito.service.js");
+vi.mock("../src/modules/cartera/cartera.service.js");
+vi.mock("../src/modules/reportes/reportes.service.js");
 
 const { app } = await import("../src/app.js");
 
 const ID = "550e8400-e29b-41d4-a716-446655440000";
 
-type Method = "get" | "post" | "patch" | "delete";
+type Method = "get" | "post" | "put" | "patch" | "delete";
 
 const loginAs = (rol: RolUsuario) => {
-  mocks.getUser.mockResolvedValue({ data: { user: { id: ID } }, error: null });
+  mocks.getClaims.mockResolvedValue({ data: { claims: { sub: ID } }, error: null });
   mocks.findProfile.mockResolvedValue({ id: ID, nombre: "Usuario", rol, activo: true });
 };
 
@@ -68,6 +73,18 @@ const usuario = {
   rol: "FACTURACION",
 };
 
+const empresa = { nit: "900123456", digitoVerificacion: "8", razonSocial: "Taller" };
+const resolucion = {
+  ambiente: "HABILITACION",
+  prefijoFacturacion: "SETP",
+  numeroResolucion: "18760000001",
+  fechaResolucion: "2019-01-19",
+  rangoDesde: 990000000,
+  rangoHasta: 995000000,
+  vigenciaDesde: "2019-01-19",
+  vigenciaHasta: "2030-01-19",
+};
+
 const ALL_OK = { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 200 };
 
 const matrix: [Method, string, object | undefined, Record<RolUsuario, number>][] = [
@@ -99,11 +116,51 @@ const matrix: [Method, string, object | undefined, Record<RolUsuario, number>][]
   ["get", "/api/facturas", undefined, { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 }],
   ["get", "/api/usuarios", undefined, { ADMINISTRADOR: 200, FACTURACION: 403, OPERADOR: 403 }],
   ["post", "/api/usuarios", usuario, { ADMINISTRADOR: 201, FACTURACION: 403, OPERADOR: 403 }],
+  [
+    "post",
+    `/api/facturas/${ID}/enviar`,
+    undefined,
+    { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 },
+  ],
+  [
+    "get",
+    `/api/facturas/${ID}/envios`,
+    undefined,
+    { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 },
+  ],
+  ["get", "/api/notas-credito", undefined, { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 }],
+  [
+    "post",
+    "/api/notas-credito",
+    { facturaId: ID, tipoAjuste: "TOTAL", motivo: "Anulacion por error" },
+    { ADMINISTRADOR: 201, FACTURACION: 201, OPERADOR: 403 },
+  ],
+  ["get", "/api/cartera", undefined, { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 }],
+  [
+    "post",
+    `/api/facturas/${ID}/pagos`,
+    { monto: 1000, metodoPago: "EFECTIVO" },
+    { ADMINISTRADOR: 201, FACTURACION: 201, OPERADOR: 403 },
+  ],
+  ["get", "/api/reportes/facturacion", undefined, { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 }],
+  ["get", "/api/configuracion", undefined, { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 }],
+  [
+    "put",
+    "/api/configuracion/empresa",
+    empresa,
+    { ADMINISTRADOR: 200, FACTURACION: 403, OPERADOR: 403 },
+  ],
+  [
+    "put",
+    "/api/configuracion/resolucion",
+    resolucion,
+    { ADMINISTRADOR: 200, FACTURACION: 403, OPERADOR: 403 },
+  ],
 ];
 
 describe("role based access", () => {
   beforeEach(() => {
-    mocks.getUser.mockReset();
+    mocks.getClaims.mockReset();
     mocks.findProfile.mockReset();
   });
 
@@ -146,6 +203,15 @@ describe("role based access", () => {
     }).expect(400);
 
     expect(response.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("validates credit notes and payments before reaching the service", async () => {
+    loginAs("FACTURACION");
+    await call("post", "/api/notas-credito", { facturaId: ID, tipoAjuste: "PARCIAL", motivo: "Devolucion" }).expect(400);
+    await call("post", "/api/notas-credito", { facturaId: ID, tipoAjuste: "TOTAL", motivo: "x" }).expect(400);
+    await call("post", `/api/facturas/${ID}/pagos`, { monto: 0, metodoPago: "EFECTIVO" }).expect(400);
+    await call("post", `/api/facturas/${ID}/pagos`, { monto: 10.123, metodoPago: "EFECTIVO" }).expect(400);
+    await call("post", `/api/facturas/${ID}/pagos`, { monto: 10, metodoPago: "CHEQUE" }).expect(400);
   });
 
   it("validates user payloads before reaching the service", async () => {

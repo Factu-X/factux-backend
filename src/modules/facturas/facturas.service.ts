@@ -1,14 +1,22 @@
-import { or } from "@prisma/orm-postgres/orm-client";
+import { and, or } from "@prisma/orm-postgres/orm-client";
 
 import { db } from "../../prisma/db.js";
 import { badRequest, conflict, notFound } from "../../shared/http-error.js";
-import { numeric, nullableVarchar, varchar } from "../../shared/prisma-types.js";
+import { nullableVarchar, varchar } from "../../shared/prisma-types.js";
 import { nowInstant } from "../../shared/time.js";
+import {
+  alertaBloqueante,
+  evaluarResolucion,
+  isResolucionCompleta,
+  siguienteConsecutivo,
+} from "../configuracion/configuracion.rules.js";
 import type { CreateFacturaInput, FacturasQuery } from "./facturas.schemas.js";
 
 type DbContext = {
   orm: typeof db.orm;
 };
+
+const hoyColombia = () => Temporal.Now.plainDateISO("America/Bogota");
 
 const parsePlainDate = (value: string | undefined) => {
   if (!value) return null;
@@ -20,17 +28,67 @@ const parsePlainDate = (value: string | undefined) => {
   }
 };
 
-const nextConsecutivo = async (client: DbContext) => {
-  const latest = await client.orm.public.Facturas
-    .orderBy((factura) => factura.consecutivo.desc())
-    .limit(1)
-    .first();
+// Toma el siguiente numero de la resolucion vigente. El UPDATE solo aplica si nadie mas
+// avanzo el consecutivo entre la lectura y la escritura, asi dos facturas nunca comparten numero.
+const reservarNumero = async (client: DbContext) => {
+  const empresa = await client.orm.public.ConfiguracionEmpresa.where({ singleton: true }).first();
+  const resolucion = empresa
+    ? await client.orm.public.ConfiguracionDian.where({ empresaId: empresa.id }).first()
+    : null;
 
-  return (latest?.consecutivo ?? 0) + 1;
+  const bloqueo = alertaBloqueante(evaluarResolucion(resolucion, hoyColombia()));
+
+  if (bloqueo || !isResolucionCompleta(resolucion)) {
+    throw badRequest(bloqueo?.mensaje ?? "No hay resolucion de numeracion configurada");
+  }
+
+  const consecutivo = siguienteConsecutivo(resolucion);
+  const actualizadas = await client.orm.public.ConfiguracionDian
+    .where((dian) =>
+      and(
+        dian.id.eq(resolucion.id),
+        resolucion.consecutivoActual === null
+          ? dian.consecutivoActual.isNull()
+          : dian.consecutivoActual.eq(resolucion.consecutivoActual),
+      ),
+    )
+    .updateAndCount({ consecutivoActual: consecutivo });
+
+  if (actualizadas === 0) {
+    throw conflict("Otra factura tomo este numero al mismo tiempo; intenta de nuevo");
+  }
+
+  const prefijo = resolucion.prefijoFacturacion ?? "";
+
+  return { prefijo, consecutivo, numero: `${prefijo}${consecutivo}` };
 };
 
-const getFacturaByIdWithClient = async (id: string, client: DbContext = db) => {
-  const factura = await client.orm.public.Facturas.first({ id });
+const facturasResumen = () =>
+  db.orm.public.Facturas
+    .include("cliente", (cliente) =>
+      cliente.select("id", "tipoIdentificacion", "numeroIdentificacion", "nombreRazonSocial"),
+    )
+    .include("orden", (orden) =>
+      orden
+        .select("id", "numero", "motocicletaId")
+        .include("motocicleta", (moto) => moto.select("id", "placa", "marca", "modelo")),
+    );
+
+const getFacturaCompleta = async (id: string, client: DbContext = db) => {
+  const factura = await client.orm.public.Facturas
+    .include("cliente")
+    .include("orden", (orden) =>
+      orden
+        .select("id", "numero", "fechaIngreso", "kilometrajeIngreso", "motivoIngreso", "motocicletaId")
+        .include("motocicleta"),
+    )
+    .include("detallesFacturas", (detalle) =>
+      detalle
+        .include("detalleOrden", (detalleOrden) => detalleOrden.select("tipoItem", "tratamientoIva"))
+        .orderBy((d) => d.createdAt.asc()),
+    )
+    .where({ id })
+    .first();
 
   if (!factura) {
     throw notFound("Factura no encontrada");
@@ -40,28 +98,27 @@ const getFacturaByIdWithClient = async (id: string, client: DbContext = db) => {
 };
 
 export const listFacturas = (query: FacturasQuery) => {
-  if (query.search) {
-    const search = `%${query.search}%`;
+  const search = query.search ? `%${query.search}%` : null;
 
-    return db.orm.public.Facturas
-      .where((factura) => or(factura.numero.ilike(search), factura.cufe.ilike(search)))
-      .orderBy((factura) => factura.fechaEmision.desc())
-      .all();
-  }
-
-  return db.orm.public.Facturas.orderBy((factura) => factura.fechaEmision.desc()).all();
-};
-
-export const getFacturaById = (id: string) => getFacturaByIdWithClient(id);
-
-export const listDetallesFactura = async (facturaId: string) => {
-  await getFacturaByIdWithClient(facturaId);
-
-  return db.orm.public.DetallesFactura
-    .where({ facturaId })
-    .orderBy((detalle) => detalle.createdAt.asc())
+  return facturasResumen()
+    .where((factura) =>
+      and(
+        search ? or(factura.numero.ilike(search), factura.cufe.ilike(search)) : factura.id.isNotNull(),
+        query.estadoDian ? factura.estadoDian.eq(query.estadoDian) : factura.id.isNotNull(),
+        query.clienteId ? factura.clienteId.eq(query.clienteId) : factura.id.isNotNull(),
+        query.formaPago ? factura.formaPago.eq(query.formaPago) : factura.id.isNotNull(),
+      ),
+    )
+    .orderBy((factura) => factura.fechaEmision.desc())
+    .limit(query.limit)
+    .offset(query.offset)
     .all();
 };
+
+export const getFacturaById = (id: string) => getFacturaCompleta(id);
+
+export const listDetallesFactura = async (facturaId: string) =>
+  (await getFacturaCompleta(facturaId)).detallesFacturas;
 
 export const createFacturaFromOrden = async (input: CreateFacturaInput, creadaPor?: string) =>
   db.transaction(async (tx) => {
@@ -87,19 +144,23 @@ export const createFacturaFromOrden = async (input: CreateFacturaInput, creadaPo
       throw badRequest("No se puede facturar una orden sin detalles");
     }
 
-    const consecutivo = await nextConsecutivo(tx);
-    const prefijo = "FV";
-    const numero = `${prefijo}-${consecutivo.toString().padStart(6, "0")}`;
+    const fechaVencimiento = parsePlainDate(input.fechaVencimiento);
+
+    if (fechaVencimiento && Temporal.PlainDate.compare(fechaVencimiento, hoyColombia()) < 0) {
+      throw badRequest("fechaVencimiento no puede ser anterior a hoy");
+    }
+
+    const { prefijo, consecutivo, numero } = await reservarNumero(tx);
 
     const factura = await tx.orm.public.Facturas.create({
       ordenId: orden.id,
       clienteId: orden.clienteId,
       creadaPor: creadaPor ?? null,
-      prefijo: nullableVarchar<20>(prefijo),
+      prefijo: nullableVarchar<20>(prefijo || null),
       consecutivo,
       numero: varchar<50>(numero),
       fechaEmision: nowInstant(),
-      fechaVencimiento: parsePlainDate(input.fechaVencimiento),
+      fechaVencimiento: input.formaPago === "CREDITO" ? fechaVencimiento : null,
       formaPago: input.formaPago,
       subtotal: orden.subtotal,
       impuestos: orden.impuestos,
@@ -125,11 +186,5 @@ export const createFacturaFromOrden = async (input: CreateFacturaInput, creadaPo
       });
     }
 
-    await tx.orm.public.OrdenesServicio.where({ id: orden.id }).update({
-      subtotal: numeric<14, 2>(orden.subtotal),
-      impuestos: numeric<14, 2>(orden.impuestos),
-      total: numeric<14, 2>(orden.total),
-    });
-
-    return getFacturaByIdWithClient(factura.id, tx);
+    return getFacturaCompleta(factura.id, tx);
   });
