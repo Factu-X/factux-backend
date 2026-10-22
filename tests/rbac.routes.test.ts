@@ -168,17 +168,19 @@ describe("role based access", () => {
     for (const [rol, status] of Object.entries(expected) as [RolUsuario, number][]) {
       it(`${rol} ${method.toUpperCase()} ${path} -> ${status}`, async () => {
         loginAs(rol);
-        await call(method, path, body).expect(status);
+        const response = await call(method, path, body);
+        expect(response.status).toBe(status);
       });
     }
   }
 
   it("lets the operator advance the order state and notes", async () => {
     loginAs("OPERADOR");
-    await call("patch", `/api/ordenes/${ID}`, {
+    const response = await call("patch", `/api/ordenes/${ID}`, {
       estado: "EN_PROCESO",
       observaciones: "Listo",
-    }).expect(200);
+    });
+    expect(response.status).toBe(200);
   });
 
   it("blocks the operator from editing reception data", async () => {
@@ -192,7 +194,8 @@ describe("role based access", () => {
 
   it("blocks the operator from cancelling orders", async () => {
     loginAs("OPERADOR");
-    await call("patch", `/api/ordenes/${ID}`, { estado: "CANCELADA" }).expect(403);
+    const response = await call("patch", `/api/ordenes/${ID}`, { estado: "CANCELADA" });
+    expect(response.status).toBe(403);
   });
 
   it("rejects creating orders already finalized", async () => {
@@ -223,24 +226,28 @@ describe("role based access", () => {
 
   it("validates user payloads before reaching the service", async () => {
     loginAs("ADMINISTRADOR");
-    await call("post", "/api/usuarios", { ...usuario, password: "corta" }).expect(400);
-    await call("post", "/api/usuarios", { ...usuario, rol: "SUPERUSUARIO" }).expect(400);
+    const corta = await call("post", "/api/usuarios", { ...usuario, password: "corta" });
+    const rol = await call("post", "/api/usuarios", { ...usuario, rol: "SUPERUSUARIO" });
+    expect(corta.status).toBe(400);
+    expect(rol.status).toBe(400);
   });
 
   it("rejects a numbering range that ends before it starts", async () => {
     loginAs("ADMINISTRADOR");
-    await call("put", "/api/configuracion/numeracion", {
+    const response = await call("put", "/api/configuracion/numeracion", {
       ...numeracion,
       rangoDesde: 10,
       rangoHasta: 5,
-    }).expect(400);
+    });
+    expect(response.status).toBe(400);
   });
 
   it("rejects prefixes longer than the DIAN allows", async () => {
     loginAs("ADMINISTRADOR");
-    await call("put", "/api/configuracion/numeracion", {
+    const response = await call("put", "/api/configuracion/numeracion", {
       ...numeracion,
       prefijoFacturacion: "FACTX",
-    }).expect(400);
+    });
+    expect(response.status).toBe(400);
   });
 });
