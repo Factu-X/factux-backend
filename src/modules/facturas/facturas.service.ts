@@ -40,7 +40,8 @@ const getFacturaByIdWithClient = async (id: string, client: DbContext = db) => {
 };
 
 // Cliente y orden viajan con la factura para que la pantalla no haga N+1 requests.
-const facturasConRelaciones = () => db.orm.public.Facturas.include("cliente").include("orden");
+const facturasConRelaciones = () =>
+  db.orm.public.Facturas.include("cliente").include("orden", (orden) => orden.include("motocicleta"));
 
 export const listFacturas = (query: FacturasQuery) => {
   const search = query.search ? `%${query.search}%` : null;
