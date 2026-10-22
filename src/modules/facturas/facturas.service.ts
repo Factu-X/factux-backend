@@ -60,8 +60,18 @@ export const listFacturas = (query: FacturasQuery) => {
     .all();
 };
 
-export const getFacturaById = async (id: string) => {
-  const factura = await facturasConRelaciones().where({ id }).first();
+// El detalle trae lo que necesitan HU-07 a HU-10: moto de la orden y lineas con su tratamiento de IVA.
+export const getFacturaById = async (id: string, client: DbContext = db) => {
+  const factura = await client.orm.public.Facturas
+    .include("cliente")
+    .include("orden", (orden) => orden.include("motocicleta"))
+    .include("detallesFacturas", (detalle) =>
+      detalle
+        .include("detalleOrden", (detalleOrden) => detalleOrden.select("tipoItem", "tratamientoIva"))
+        .orderBy((d) => d.createdAt.asc()),
+    )
+    .where({ id })
+    .first();
 
   if (!factura) {
     throw notFound("Factura no encontrada");
@@ -88,7 +98,8 @@ const fechaHoraColombia = (instant: Temporal.Instant) => {
   };
 };
 
-const xmlPath = (numero: string) => `facturas/${numero}.xml`;
+export const xmlPath = (numero: string) => `facturas/${numero}.xml`;
+export const xmlFirmadoPath = (numero: string) => `facturas/${numero}.firmado.xml`;
 
 export const createFacturaFromOrden = async (input: CreateFacturaInput, creadaPor?: string) => {
   // De contado vence el mismo dia: la fecha de vencimiento solo aplica a credito.

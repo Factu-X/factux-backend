@@ -1,11 +1,10 @@
-import { createSecureContext } from "node:tls";
-
 import { supabaseAdmin } from "../../config/supabase.js";
 import { db } from "../../prisma/db.js";
 import { badRequest, conflict, serviceUnavailable } from "../../shared/http-error.js";
 import { nullableVarchar, varchar } from "../../shared/prisma-types.js";
 import { hoyColombia } from "../../shared/time.js";
 import type { RolUsuario } from "../auth/types.js";
+import { leerCertificadoP12 } from "../dian/signer.js";
 import {
   calcularDvNit,
   evaluarConfiguracion,
@@ -137,14 +136,15 @@ export const getConfiguracion = async (rol: RolUsuario) => {
   };
 };
 
-// Para HU-06: devuelve todo lo necesario para emitir o explica que falta.
-export const getConfiguracionEmision = async () => {
+// HU-06 emite con lo minimo; HU-07 (transmitir) exige ademas certificado y TestSetId.
+export const getConfiguracionEmision = async ({ transmitir = false } = {}) => {
   const { empresa, numeracionRow, estado } = await cargarConfiguracion();
+  const faltantes = transmitir
+    ? [...estado.faltantesEmision, ...estado.faltantesTransmision]
+    : estado.faltantesEmision;
 
-  if (!estado.puedeEmitir || !empresa || !numeracionRow) {
-    throw badRequest(
-      `La configuracion de facturacion esta incompleta: ${estado.faltantesEmision.join(", ")}`,
-    );
+  if (faltantes.length > 0 || !empresa || !numeracionRow) {
+    throw badRequest(`La configuracion de facturacion esta incompleta: ${faltantes.join(", ")}`);
   }
 
   const [claveTecnica, pin] = await Promise.all([
@@ -295,19 +295,44 @@ export const updateCredenciales = async (input: UpdateCredencialesInput) => {
   if (input.claveTecnica) await guardarSecreto(SECRETOS.claveTecnica, input.claveTecnica);
 };
 
-const assertCertificadoValido = (archivo: Buffer, password: string) => {
+const abrirCertificado = async (archivo: Buffer, password: string) => {
+  let certificado;
   try {
-    createSecureContext({ pfx: archivo, passphrase: password });
-  } catch (error) {
-    const message = error instanceof Error ? error.message.toLowerCase() : "";
-    // shortcut: OpenSSL 3 no abre .p12 con cifrado legado (RC2); se aceptan sin validar localmente.
-    // Validarlos con node-forge si la DIAN los rechaza al firmar (HU-07).
-    if (message.includes("unsupported")) return;
-    if (message.includes("mac verify") || message.includes("bad decrypt")) {
-      throw badRequest("La contrasena del certificado no es correcta");
-    }
-    throw badRequest("El archivo no es un certificado PKCS#12 (.p12 / .pfx) valido");
+    certificado = await leerCertificadoP12(archivo, password);
+  } catch {
+    throw badRequest("El archivo no es un certificado .p12 valido o la contrasena no es correcta");
   }
+  if (certificado.venceEl.getTime() < Date.now()) {
+    throw badRequest("El certificado digital esta vencido");
+  }
+  return certificado;
+};
+
+// Certificado de firma para HU-07, descargado del bucket y abierto con la contrasena de Vault.
+let certificadoCache: { clave: string; certificado: Awaited<ReturnType<typeof abrirCertificado>> } | null = null;
+
+export const getCertificadoFirma = async (numeracion: { certificadoPath: string | null; updatedAt: Temporal.Instant }) => {
+  if (!numeracion.certificadoPath) {
+    throw badRequest("Cargue el certificado digital antes de transmitir");
+  }
+
+  // updatedAt cambia cada vez que se carga un certificado nuevo, asi el cache no queda viejo.
+  const clave = `${numeracion.certificadoPath}:${numeracion.updatedAt.toString()}`;
+
+  if (certificadoCache?.clave !== clave) {
+    const { data, error } = await requireSecretsClient()
+      .storage.from(BUCKET_PRIVADO)
+      .download(numeracion.certificadoPath);
+    if (error) throw error;
+
+    const password = (await leerSecreto(SECRETOS.certificadoPassword)) ?? "";
+    certificadoCache = {
+      clave,
+      certificado: await abrirCertificado(Buffer.from(await data.arrayBuffer()), password),
+    };
+  }
+
+  return certificadoCache.certificado;
 };
 
 export const updateCertificado = async (input: UpdateCertificadoInput) => {
@@ -315,7 +340,7 @@ export const updateCertificado = async (input: UpdateCertificadoInput) => {
   const numeracion = await requireNumeracion();
   const archivo = Buffer.from(input.archivoBase64, "base64");
 
-  assertCertificadoValido(archivo, input.password);
+  await abrirCertificado(archivo, input.password);
 
   const { error } = await client.storage
     .from(BUCKET_PRIVADO)

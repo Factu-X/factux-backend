@@ -25,6 +25,10 @@ vi.mock("../src/modules/ordenes/ordenes.service.js");
 vi.mock("../src/modules/facturas/facturas.service.js");
 vi.mock("../src/modules/usuarios/usuarios.service.js");
 vi.mock("../src/modules/configuracion/configuracion.service.js");
+vi.mock("../src/modules/dian/dian.service.js");
+vi.mock("../src/modules/notas-credito/notas-credito.service.js");
+vi.mock("../src/modules/cartera/cartera.service.js");
+vi.mock("../src/modules/reportes/reportes.service.js");
 
 const { app } = await import("../src/app.js");
 
@@ -135,6 +139,23 @@ const matrix: [Method, string, object | undefined, Record<RolUsuario, number>][]
   ],
   ["get", "/api/usuarios", undefined, { ADMINISTRADOR: 200, FACTURACION: 403, OPERADOR: 403 }],
   ["post", "/api/usuarios", usuario, { ADMINISTRADOR: 201, FACTURACION: 403, OPERADOR: 403 }],
+  ["post", `/api/facturas/${ID}/enviar`, undefined, { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 }],
+  ["get", `/api/facturas/${ID}/envios`, undefined, { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 }],
+  ["get", "/api/notas-credito", undefined, { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 }],
+  [
+    "post",
+    "/api/notas-credito",
+    { facturaId: ID, tipoAjuste: "TOTAL", motivo: "Anulacion por error" },
+    { ADMINISTRADOR: 201, FACTURACION: 201, OPERADOR: 403 },
+  ],
+  ["get", "/api/cartera", undefined, { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 }],
+  [
+    "post",
+    `/api/facturas/${ID}/pagos`,
+    { monto: 1000, metodoPago: "EFECTIVO" },
+    { ADMINISTRADOR: 201, FACTURACION: 201, OPERADOR: 403 },
+  ],
+  ["get", "/api/reportes/facturacion", undefined, { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 }],
 ];
 
 describe("role based access", () => {
@@ -182,6 +203,15 @@ describe("role based access", () => {
     }).expect(400);
 
     expect(response.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("validates credit notes and payments before reaching the service", async () => {
+    loginAs("FACTURACION");
+    await call("post", "/api/notas-credito", { facturaId: ID, tipoAjuste: "PARCIAL", motivo: "Devolucion" }).expect(400);
+    await call("post", "/api/notas-credito", { facturaId: ID, tipoAjuste: "TOTAL", motivo: "x" }).expect(400);
+    await call("post", `/api/facturas/${ID}/pagos`, { monto: 0, metodoPago: "EFECTIVO" }).expect(400);
+    await call("post", `/api/facturas/${ID}/pagos`, { monto: 10.123, metodoPago: "EFECTIVO" }).expect(400);
+    await call("post", `/api/facturas/${ID}/pagos`, { monto: 10, metodoPago: "CHEQUE" }).expect(400);
   });
 
   it("validates user payloads before reaching the service", async () => {

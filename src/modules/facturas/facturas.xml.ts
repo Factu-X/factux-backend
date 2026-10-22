@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { decimalFromScale, parseDecimalToScale } from "../../shared/decimal.js";
+import { calcularCufe as cufeAnexo } from "../dian/cufe.js";
 
 // HU-06: documento UBL 2.1 segun el Anexo Tecnico de Factura Electronica de Venta (DIAN).
 // Se genera listo para firmar: el segundo UBLExtension queda vacio para la firma XAdES (HU-07).
@@ -111,28 +112,25 @@ export const calcularTotales = (lineas: LineaFactura[]) => {
 };
 
 // CUFE = SHA-384(NumFac + FecFac + HorFac + ValFac + 01 + ValIva + 04 + ValINC + 03 + ValICA
-//                + ValTot + NitOFE + NumAdq + ClTec + TipoAmbiente)
+//                + ValTot + NitOFE + NumAdq + ClTec + TipoAmbiente). Misma formula que valida el simulador.
 export const calcularCufe = (input: FacturaXmlInput) => {
   const totales = calcularTotales(input.lineas);
 
-  return sha384(
-    [
-      input.numero,
-      input.fechaEmision,
-      input.horaEmision,
-      money(totales.valorBruto),
-      "01",
-      money(totales.iva),
-      "04",
-      "0.00",
-      "03",
-      "0.00",
-      money(totales.total),
-      input.emisor.nit,
-      input.adquiriente.numeroIdentificacion,
-      input.claveTecnica,
-      ambienteCodigo(input.ambiente),
-    ].join(""),
+  return cufeAnexo(
+    {
+      numero: input.numero,
+      fecha: input.fechaEmision,
+      hora: input.horaEmision,
+      valorBruto: money(totales.valorBruto),
+      iva: money(totales.iva),
+      inc: "0.00",
+      ica: "0.00",
+      valorTotal: money(totales.total),
+      nitEmisor: input.emisor.nit,
+      documentoAdquirente: input.adquiriente.numeroIdentificacion,
+      ambiente: ambienteCodigo(input.ambiente),
+    },
+    input.claveTecnica,
   );
 };
 
