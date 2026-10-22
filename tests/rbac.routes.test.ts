@@ -207,11 +207,18 @@ describe("role based access", () => {
 
   it("validates credit notes and payments before reaching the service", async () => {
     loginAs("FACTURACION");
-    await call("post", "/api/notas-credito", { facturaId: ID, tipoAjuste: "PARCIAL", motivo: "Devolucion" }).expect(400);
-    await call("post", "/api/notas-credito", { facturaId: ID, tipoAjuste: "TOTAL", motivo: "x" }).expect(400);
-    await call("post", `/api/facturas/${ID}/pagos`, { monto: 0, metodoPago: "EFECTIVO" }).expect(400);
-    await call("post", `/api/facturas/${ID}/pagos`, { monto: 10.123, metodoPago: "EFECTIVO" }).expect(400);
-    await call("post", `/api/facturas/${ID}/pagos`, { monto: 10, metodoPago: "CHEQUE" }).expect(400);
+    const responses = await Promise.all([
+      call("post", "/api/notas-credito", { facturaId: ID, tipoAjuste: "PARCIAL", motivo: "Devolucion" }),
+      call("post", "/api/notas-credito", { facturaId: ID, tipoAjuste: "TOTAL", motivo: "x" }),
+      call("post", `/api/facturas/${ID}/pagos`, { monto: 0, metodoPago: "EFECTIVO" }),
+      call("post", `/api/facturas/${ID}/pagos`, { monto: 10.123, metodoPago: "EFECTIVO" }),
+      call("post", `/api/facturas/${ID}/pagos`, { monto: 10, metodoPago: "CHEQUE" }),
+    ]);
+
+    for (const response of responses) {
+      expect(response.status).toBe(400);
+      expect(response.body.error.code).toBe("VALIDATION_ERROR");
+    }
   });
 
   it("validates user payloads before reaching the service", async () => {

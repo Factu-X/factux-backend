@@ -10,7 +10,8 @@ export const NS = {
   ext: "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2",
   sts: "dian:gov:co:facturaelectronica:Structures-2-1",
   ds: "http://www.w3.org/2000/09/xmldsig#",
-  xades: "http://uri.etsi.org/01903/v1.3.2#",
+  // Identificador del namespace XAdES (ETSI), no una URL que se consulte: debe ser http para que la firma valide.
+  xades: "http://uri.etsi.org/01903/v1.3.2#", // NOSONAR
 } as const;
 
 export const NIT_DIAN = "800197268";
