@@ -2,6 +2,14 @@ import { Router } from "express";
 
 import { authenticate, requireRole } from "../../middlewares/auth.js";
 import { validateRequest } from "../../middlewares/validate-request.js";
+import { getEstadoCuentaController, registrarPagoController } from "../cartera/cartera.controller.js";
+import { registrarPagoSchema } from "../cartera/cartera.schemas.js";
+import {
+  enviarFacturaController,
+  getPdfController,
+  listEnviosController,
+} from "../dian/dian.controller.js";
+import { getAcreditableController } from "../notas-credito/notas-credito.controller.js";
 import {
   createFacturaController,
   getFacturaController,
@@ -53,4 +61,49 @@ facturasRouter.post(
   requireRole("ADMINISTRADOR", "FACTURACION"),
   validateRequest({ body: createFacturaSchema }),
   createFacturaController,
+);
+
+// HU-07: firma y envio a la DIAN (simulador), historial de intentos y representacion grafica.
+facturasRouter.post(
+  "/:id/enviar",
+  requireRole("ADMINISTRADOR", "FACTURACION"),
+  validateRequest({ params: facturaIdParamsSchema }),
+  enviarFacturaController,
+);
+
+facturasRouter.get(
+  "/:id/envios",
+  requireRole("ADMINISTRADOR", "FACTURACION"),
+  validateRequest({ params: facturaIdParamsSchema }),
+  listEnviosController,
+);
+
+facturasRouter.get(
+  "/:id/pdf",
+  requireRole("ADMINISTRADOR", "FACTURACION"),
+  validateRequest({ params: facturaIdParamsSchema }),
+  getPdfController,
+);
+
+// HU-08: lo que queda por acreditar de cada linea.
+facturasRouter.get(
+  "/:id/acreditable",
+  requireRole("ADMINISTRADOR", "FACTURACION"),
+  validateRequest({ params: facturaIdParamsSchema }),
+  getAcreditableController,
+);
+
+// HU-10: estado de cuenta y registro de pagos.
+facturasRouter.get(
+  "/:id/cuenta",
+  requireRole("ADMINISTRADOR", "FACTURACION"),
+  validateRequest({ params: facturaIdParamsSchema }),
+  getEstadoCuentaController,
+);
+
+facturasRouter.post(
+  "/:id/pagos",
+  requireRole("ADMINISTRADOR", "FACTURACION"),
+  validateRequest({ params: facturaIdParamsSchema, body: registrarPagoSchema }),
+  registrarPagoController,
 );

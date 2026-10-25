@@ -1,3 +1,5 @@
+import { randomBytes } from "node:crypto";
+
 import { and } from "@prisma/orm-postgres/orm-client";
 
 import { db } from "../../prisma/db.js";
@@ -25,7 +27,7 @@ type DbContext = {
 
 const generateOrdenNumero = () => {
   const timestamp = new Date().toISOString().replace(/\D/g, "").slice(0, 14);
-  const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
+  const suffix = randomBytes(2).toString("hex").toUpperCase();
 
   return varchar<50>(`OS-${timestamp}-${suffix}`);
 };
