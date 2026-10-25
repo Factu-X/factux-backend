@@ -4,12 +4,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RolUsuario } from "../src/modules/auth/types.js";
 
 const mocks = vi.hoisted(() => ({
-  getUser: vi.fn(),
+  getClaims: vi.fn(),
   findProfile: vi.fn(),
 }));
 
 vi.mock("../src/config/supabase.js", () => ({
-  supabase: { auth: { getUser: mocks.getUser } },
+  supabase: { auth: { getClaims: mocks.getClaims } },
   supabaseAdmin: null,
 }));
 
@@ -24,15 +24,16 @@ vi.mock("../src/modules/motocicletas/motocicletas.service.js");
 vi.mock("../src/modules/ordenes/ordenes.service.js");
 vi.mock("../src/modules/facturas/facturas.service.js");
 vi.mock("../src/modules/usuarios/usuarios.service.js");
+vi.mock("../src/modules/configuracion/configuracion.service.js");
 
 const { app } = await import("../src/app.js");
 
 const ID = "550e8400-e29b-41d4-a716-446655440000";
 
-type Method = "get" | "post" | "patch" | "delete";
+type Method = "get" | "post" | "put" | "patch" | "delete";
 
 const loginAs = (rol: RolUsuario) => {
-  mocks.getUser.mockResolvedValue({ data: { user: { id: ID } }, error: null });
+  mocks.getClaims.mockResolvedValue({ data: { claims: { sub: ID } }, error: null });
   mocks.findProfile.mockResolvedValue({ id: ID, nombre: "Usuario", rol, activo: true });
 };
 
@@ -68,6 +69,17 @@ const usuario = {
   rol: "FACTURACION",
 };
 
+const numeracion = {
+  ambiente: "HABILITACION",
+  prefijoFacturacion: "SETP",
+  numeroResolucion: "18760000001",
+  fechaResolucion: "2026-01-01",
+  rangoDesde: 990000000,
+  rangoHasta: 995000000,
+  vigenciaDesde: "2026-01-01",
+  vigenciaHasta: "2027-12-31",
+};
+
 const ALL_OK = { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 200 };
 
 const matrix: [Method, string, object | undefined, Record<RolUsuario, number>][] = [
@@ -97,13 +109,37 @@ const matrix: [Method, string, object | undefined, Record<RolUsuario, number>][]
     { ADMINISTRADOR: 201, FACTURACION: 201, OPERADOR: 201 },
   ],
   ["get", "/api/facturas", undefined, { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 }],
+  [
+    "post",
+    "/api/facturas",
+    { ordenId: ID },
+    { ADMINISTRADOR: 201, FACTURACION: 201, OPERADOR: 403 },
+  ],
+  [
+    "get",
+    "/api/configuracion",
+    undefined,
+    { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 },
+  ],
+  [
+    "put",
+    "/api/configuracion/numeracion",
+    numeracion,
+    { ADMINISTRADOR: 200, FACTURACION: 403, OPERADOR: 403 },
+  ],
+  [
+    "put",
+    "/api/configuracion/credenciales",
+    { pin: "12345" },
+    { ADMINISTRADOR: 200, FACTURACION: 403, OPERADOR: 403 },
+  ],
   ["get", "/api/usuarios", undefined, { ADMINISTRADOR: 200, FACTURACION: 403, OPERADOR: 403 }],
   ["post", "/api/usuarios", usuario, { ADMINISTRADOR: 201, FACTURACION: 403, OPERADOR: 403 }],
 ];
 
 describe("role based access", () => {
   beforeEach(() => {
-    mocks.getUser.mockReset();
+    mocks.getClaims.mockReset();
     mocks.findProfile.mockReset();
   });
 
@@ -152,5 +188,22 @@ describe("role based access", () => {
     loginAs("ADMINISTRADOR");
     await call("post", "/api/usuarios", { ...usuario, password: "corta" }).expect(400);
     await call("post", "/api/usuarios", { ...usuario, rol: "SUPERUSUARIO" }).expect(400);
+  });
+
+  it("rejects a numbering range that ends before it starts", async () => {
+    loginAs("ADMINISTRADOR");
+    await call("put", "/api/configuracion/numeracion", {
+      ...numeracion,
+      rangoDesde: 10,
+      rangoHasta: 5,
+    }).expect(400);
+  });
+
+  it("rejects prefixes longer than the DIAN allows", async () => {
+    loginAs("ADMINISTRADOR");
+    await call("put", "/api/configuracion/numeracion", {
+      ...numeracion,
+      prefijoFacturacion: "FACTX",
+    }).expect(400);
   });
 });

@@ -34,7 +34,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'6be4f5efd8b0c7c3c0a43c34daa071143da55a635bdb9086c32472ad6022495b'>;
+  StorageHashBase<'34b579c8070956d2e734733f5626398a0f630cac06caf3f11b203b5ac95a4d13'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -268,6 +268,8 @@ export type FieldOutputTypes = {
       readonly vigenciaHasta: CodecTypes['pg/date-temporal@1']['output'] | null;
       readonly certificadoPath: CodecTypes['pg/text@1']['output'] | null;
       readonly certificadoExpira: CodecTypes['pg/date-temporal@1']['output'] | null;
+      readonly softwareId: Varchar<100> | null;
+      readonly testSetId: Varchar<100> | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
@@ -281,6 +283,12 @@ export type FieldOutputTypes = {
       readonly telefono: Varchar<30> | null;
       readonly email: Varchar<200> | null;
       readonly regimenFiscal: Varchar<150> | null;
+      readonly nombreComercial: Varchar<200> | null;
+      readonly tipoPersona: Varchar<10>;
+      readonly responsabilidadesFiscales: Varchar<100> | null;
+      readonly ciudad: Varchar<100> | null;
+      readonly departamento: Varchar<100> | null;
+      readonly codigoMunicipio: Varchar<5> | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
@@ -487,6 +495,8 @@ export type FieldInputTypes = {
       readonly vigenciaHasta: CodecTypes['pg/date-temporal@1']['input'] | null;
       readonly certificadoPath: CodecTypes['pg/text@1']['input'] | null;
       readonly certificadoExpira: CodecTypes['pg/date-temporal@1']['input'] | null;
+      readonly softwareId: CodecTypes['sql/varchar@1']['input'] | null;
+      readonly testSetId: CodecTypes['sql/varchar@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
@@ -500,6 +510,12 @@ export type FieldInputTypes = {
       readonly telefono: CodecTypes['sql/varchar@1']['input'] | null;
       readonly email: CodecTypes['sql/varchar@1']['input'] | null;
       readonly regimenFiscal: CodecTypes['sql/varchar@1']['input'] | null;
+      readonly nombreComercial: CodecTypes['sql/varchar@1']['input'] | null;
+      readonly tipoPersona: CodecTypes['sql/varchar@1']['input'];
+      readonly responsabilidadesFiscales: CodecTypes['sql/varchar@1']['input'] | null;
+      readonly ciudad: CodecTypes['sql/varchar@1']['input'] | null;
+      readonly departamento: CodecTypes['sql/varchar@1']['input'] | null;
+      readonly codigoMunicipio: CodecTypes['sql/varchar@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
@@ -705,21 +721,29 @@ export type StorageColumnTypes = {
       readonly prefijo_facturacion: Varchar<20> | null;
       readonly rango_desde: CodecTypes['pg/int4@1']['output'] | null;
       readonly rango_hasta: CodecTypes['pg/int4@1']['output'] | null;
+      readonly software_id: Varchar<100> | null;
+      readonly test_set_id: Varchar<100> | null;
       readonly updated_at: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly vigencia_desde: CodecTypes['pg/date-temporal@1']['output'] | null;
       readonly vigencia_hasta: CodecTypes['pg/date-temporal@1']['output'] | null;
     };
     readonly configuracion_empresa: {
+      readonly ciudad: Varchar<100> | null;
+      readonly codigo_municipio: Varchar<5> | null;
       readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly departamento: Varchar<100> | null;
       readonly digito_verificacion: Varchar<1> | null;
       readonly direccion: Varchar<250> | null;
       readonly email: Varchar<200> | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly nit: Varchar<20>;
+      readonly nombre_comercial: Varchar<200> | null;
       readonly razon_social: Varchar<200>;
       readonly regimen_fiscal: Varchar<150> | null;
+      readonly responsabilidades_fiscales: Varchar<100> | null;
       readonly singleton: CodecTypes['pg/bool@1']['output'];
       readonly telefono: Varchar<30> | null;
+      readonly tipo_persona: Varchar<10>;
       readonly updated_at: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
     readonly detalles_factura: {
@@ -924,21 +948,29 @@ export type StorageColumnInputTypes = {
       readonly prefijo_facturacion: CodecTypes['sql/varchar@1']['input'] | null;
       readonly rango_desde: CodecTypes['pg/int4@1']['input'] | null;
       readonly rango_hasta: CodecTypes['pg/int4@1']['input'] | null;
+      readonly software_id: CodecTypes['sql/varchar@1']['input'] | null;
+      readonly test_set_id: CodecTypes['sql/varchar@1']['input'] | null;
       readonly updated_at: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly vigencia_desde: CodecTypes['pg/date-temporal@1']['input'] | null;
       readonly vigencia_hasta: CodecTypes['pg/date-temporal@1']['input'] | null;
     };
     readonly configuracion_empresa: {
+      readonly ciudad: CodecTypes['sql/varchar@1']['input'] | null;
+      readonly codigo_municipio: CodecTypes['sql/varchar@1']['input'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly departamento: CodecTypes['sql/varchar@1']['input'] | null;
       readonly digito_verificacion: CodecTypes['sql/varchar@1']['input'] | null;
       readonly direccion: CodecTypes['sql/varchar@1']['input'] | null;
       readonly email: CodecTypes['sql/varchar@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly nit: CodecTypes['sql/varchar@1']['input'];
+      readonly nombre_comercial: CodecTypes['sql/varchar@1']['input'] | null;
       readonly razon_social: CodecTypes['sql/varchar@1']['input'];
       readonly regimen_fiscal: CodecTypes['sql/varchar@1']['input'] | null;
+      readonly responsabilidades_fiscales: CodecTypes['sql/varchar@1']['input'] | null;
       readonly singleton: CodecTypes['pg/bool@1']['input'];
       readonly telefono: CodecTypes['sql/varchar@1']['input'] | null;
+      readonly tipo_persona: CodecTypes['sql/varchar@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
     readonly detalles_factura: {
@@ -1144,6 +1176,12 @@ export namespace Models {
     telefono: Varchar<30> | null;
     email: Varchar<200> | null;
     regimenFiscal: Varchar<150> | null;
+    nombreComercial: Varchar<200> | null;
+    tipoPersona: Varchar<10>;
+    responsabilidadesFiscales: Varchar<100> | null;
+    ciudad: Varchar<100> | null;
+    departamento: Varchar<100> | null;
+    codigoMunicipio: Varchar<5> | null;
     createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     configuracionDian: public_ConfiguracionDian | null;
@@ -1163,6 +1201,8 @@ export namespace Models {
     vigenciaHasta: CodecTypes['pg/date-temporal@1']['output'] | null;
     certificadoPath: CodecTypes['pg/text@1']['output'] | null;
     certificadoExpira: CodecTypes['pg/date-temporal@1']['output'] | null;
+    softwareId: Varchar<100> | null;
+    testSetId: Varchar<100> | null;
     createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     empresa: public_ConfiguracionEmpresa;
@@ -1610,6 +1650,18 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/date-temporal@1';
                   readonly nullable: true;
                 };
+                readonly software_id: {
+                  readonly nativeType: 'character varying';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 100 };
+                };
+                readonly test_set_id: {
+                  readonly nativeType: 'character varying';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 100 };
+                };
                 readonly created_at: {
                   readonly nativeType: 'timestamptz';
                   readonly codecId: 'pg/timestamptz-temporal@1';
@@ -1711,6 +1763,46 @@ type ContractBase = Omit<
                   readonly codecId: 'sql/varchar@1';
                   readonly nullable: true;
                   readonly typeParams: { readonly length: 150 };
+                };
+                readonly nombre_comercial: {
+                  readonly nativeType: 'character varying';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 200 };
+                };
+                readonly tipo_persona: {
+                  readonly nativeType: 'character varying';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'sql/varchar@1', 'JURIDICA'>;
+                  };
+                  readonly typeParams: { readonly length: 10 };
+                };
+                readonly responsabilidades_fiscales: {
+                  readonly nativeType: 'character varying';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 100 };
+                };
+                readonly ciudad: {
+                  readonly nativeType: 'character varying';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 100 };
+                };
+                readonly departamento: {
+                  readonly nativeType: 'character varying';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 100 };
+                };
+                readonly codigo_municipio: {
+                  readonly nativeType: 'character varying';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 5 };
                 };
                 readonly created_at: {
                   readonly nativeType: 'timestamptz';
@@ -3587,6 +3679,22 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-temporal@1' };
               };
+              readonly softwareId: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 100 };
+                };
+              };
+              readonly testSetId: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 100 };
+                };
+              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -3633,6 +3741,8 @@ type ContractBase = Omit<
                 readonly vigenciaHasta: { readonly column: 'vigencia_hasta' };
                 readonly certificadoPath: { readonly column: 'certificado_path' };
                 readonly certificadoExpira: { readonly column: 'certificado_expira' };
+                readonly softwareId: { readonly column: 'software_id' };
+                readonly testSetId: { readonly column: 'test_set_id' };
                 readonly createdAt: { readonly column: 'created_at' };
                 readonly updatedAt: { readonly column: 'updated_at' };
               };
@@ -3704,6 +3814,54 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly length: 150 };
                 };
               };
+              readonly nombreComercial: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 200 };
+                };
+              };
+              readonly tipoPersona: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 10 };
+                };
+              };
+              readonly responsabilidadesFiscales: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 100 };
+                };
+              };
+              readonly ciudad: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 100 };
+                };
+              };
+              readonly departamento: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 100 };
+                };
+              };
+              readonly codigoMunicipio: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 5 };
+                };
+              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -3746,6 +3904,14 @@ type ContractBase = Omit<
                 readonly telefono: { readonly column: 'telefono' };
                 readonly email: { readonly column: 'email' };
                 readonly regimenFiscal: { readonly column: 'regimen_fiscal' };
+                readonly nombreComercial: { readonly column: 'nombre_comercial' };
+                readonly tipoPersona: { readonly column: 'tipo_persona' };
+                readonly responsabilidadesFiscales: {
+                  readonly column: 'responsabilidades_fiscales';
+                };
+                readonly ciudad: { readonly column: 'ciudad' };
+                readonly departamento: { readonly column: 'departamento' };
+                readonly codigoMunicipio: { readonly column: 'codigo_municipio' };
                 readonly createdAt: { readonly column: 'created_at' };
                 readonly updatedAt: { readonly column: 'updated_at' };
               };

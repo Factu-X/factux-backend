@@ -21,7 +21,7 @@ const seedEmpresa = async () => {
   const data = {
     singleton: true,
     nit: varchar<20>("900123456"),
-    digitoVerificacion: nullableVarchar<1>("7"),
+    digitoVerificacion: nullableVarchar<1>("8"),
     razonSocial: varchar<200>("FactuX Moto Center"),
     direccion: nullableVarchar<250>("Calle 10 #20-30"),
     telefono: nullableVarchar<30>("3001234567"),
@@ -77,7 +77,7 @@ const upsertCatalogoItem = async (input: CreateCatalogoItemInput) => {
 };
 
 const seedFacturaDemo = async (clienteId: string, motocicletaId: string, catalogoItems: Awaited<ReturnType<typeof upsertCatalogoItem>>[]) => {
-  const existingFactura = (await listFacturas({ search: "FV-" })).find(
+  const existingFactura = (await listFacturas({ search: "FV-", limit: 200, offset: 0 })).find(
     (factura) => factura.numero === "FV-000001",
   );
 

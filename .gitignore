@@ -35,3 +35,15 @@ Thumbs.db
 
 # Generated artifacts
 generated/
+
+# Certificados de firma y documentos fiscales generados (nunca al repositorio)
+certs/
+storage/
+*.p12
+*.pfx
+
+# Skills de agentes que genera `prisma skills sync` en el postinstall de npm
+.claude/
+.cursor/
+.agents/
+.devin/

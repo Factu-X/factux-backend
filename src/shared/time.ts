@@ -11,3 +11,8 @@ export const parseInstant = (value: string, fieldName: string): Temporal.Instant
 };
 
 export const nowInstant = (): Temporal.Instant => Temporal.Now.instant();
+
+// Las fechas de negocio (vigencias, emision) se evaluan en hora de Colombia.
+export const ZONA_COLOMBIA = "America/Bogota";
+
+export const hoyColombia = (): string => Temporal.Now.plainDateISO(ZONA_COLOMBIA).toString();

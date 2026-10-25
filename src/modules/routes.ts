@@ -3,6 +3,7 @@ import { Router } from "express";
 import { authRouter } from "./auth/auth.routes.js";
 import { catalogoRouter } from "./catalogo/catalogo.routes.js";
 import { clientesRouter } from "./clientes/clientes.routes.js";
+import { configuracionRouter } from "./configuracion/configuracion.routes.js";
 import { facturasRouter } from "./facturas/facturas.routes.js";
 import {
   clienteMotocicletasRouter,
@@ -20,4 +21,5 @@ apiRouter.use("/motocicletas", motocicletasRouter);
 apiRouter.use("/catalogo", catalogoRouter);
 apiRouter.use("/ordenes", ordenesRouter);
 apiRouter.use("/facturas", facturasRouter);
+apiRouter.use("/configuracion", configuracionRouter);
 apiRouter.use("/usuarios", usuariosRouter);

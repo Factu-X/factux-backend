@@ -3,6 +3,16 @@ import { z } from "zod";
 export const tipoItemCatalogoSchema = z.enum(["SERVICIO", "REPUESTO"]);
 export const tratamientoIvaSchema = z.enum(["GRAVADO", "EXENTO", "EXCLUIDO"]);
 
+// Tarifas de IVA vigentes (E.T. art. 468 general 19%, arts. 468-1 y 468-3 diferencial 5%).
+// Exentos y excluidos van en 0%: el exento se reporta a la DIAN con tarifa 0, el excluido no causa IVA.
+export const TARIFAS_IVA_GRAVADO = [19, 5];
+const TARIFA_INVALIDA = "Un item GRAVADO solo admite tarifa de IVA 19% o 5%";
+
+const tarifaValida = (value: { tratamientoIva?: string; tarifaIva?: number }) =>
+  value.tarifaIva === undefined ||
+  value.tratamientoIva !== "GRAVADO" ||
+  TARIFAS_IVA_GRAVADO.includes(value.tarifaIva);
+
 export const catalogoIdParamsSchema = z.object({
   id: z.uuid(),
 });
@@ -33,7 +43,8 @@ export const createCatalogoItemSchema = catalogoItemBaseSchema
   .refine(
     (value) => value.tratamientoIva === "GRAVADO" || value.tarifaIva === 0,
     "Los items EXENTO o EXCLUIDO deben tener tarifaIva 0",
-  );
+  )
+  .refine(tarifaValida, TARIFA_INVALIDA);
 
 export const updateCatalogoItemSchema = catalogoItemBaseSchema
   .partial()
@@ -46,7 +57,8 @@ export const updateCatalogoItemSchema = catalogoItemBaseSchema
       value.tratamientoIva === "GRAVADO" ||
       value.tarifaIva === 0,
     "Los items EXENTO o EXCLUIDO deben tener tarifaIva 0",
-  );
+  )
+  .refine(tarifaValida, TARIFA_INVALIDA);
 
 export type CatalogoIdParams = z.infer<typeof catalogoIdParamsSchema>;
 export type CatalogoQuery = z.infer<typeof catalogoQuerySchema>;
