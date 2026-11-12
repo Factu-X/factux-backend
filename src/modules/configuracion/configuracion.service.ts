@@ -87,10 +87,15 @@ const toNumeracionConfig = (row: NumeracionRow): NumeracionConfig => ({
 });
 
 const cargarConfiguracion = async () => {
-  const empresa = await getEmpresa();
-  const numeracionRow = empresa ? await getNumeracion(empresa.id) : null;
+  // Los secretos (HTTPS a Vault) no dependen de la BD: se piden en paralelo para no sumar las esperas.
+  const [{ empresa, numeracionRow }, secretos] = await Promise.all([
+    getEmpresa().then(async (empresa) => ({
+      empresa,
+      numeracionRow: empresa ? await getNumeracion(empresa.id) : null,
+    })),
+    listSecretosConfigurados(),
+  ]);
   const numeracion = numeracionRow ? toNumeracionConfig(numeracionRow) : null;
-  const secretos = await listSecretosConfigurados();
   const estado = evaluarConfiguracion(empresa, numeracion, secretos, hoyColombia());
 
   return { empresa, numeracionRow, numeracion, secretos, estado };

@@ -35,11 +35,15 @@ const toClienteUpdateData = (input: UpdateClienteInput) => ({
   email: nullableVarchar<200>(input.email),
 });
 
+// Cada cliente trae sus motos en la misma consulta: la pantalla las necesita y pedirlas una por una era un N+1.
+const clientesConMotos = () =>
+  db.orm.public.Clientes.include("motocicletas", (moto) => moto.orderBy((m) => m.placa.asc()));
+
 export const listClientes = (query: ClientesQuery) => {
   if (query.search) {
     const search = `%${query.search}%`;
 
-    return db.orm.public.Clientes
+    return clientesConMotos()
       .where((cliente) =>
         or(
           cliente.numeroIdentificacion.ilike(search),
@@ -50,7 +54,7 @@ export const listClientes = (query: ClientesQuery) => {
       .all();
   }
 
-  return db.orm.public.Clientes.orderBy((cliente) => cliente.nombreRazonSocial.asc()).all();
+  return clientesConMotos().orderBy((cliente) => cliente.nombreRazonSocial.asc()).all();
 };
 
 export const getClienteById = async (id: string) => {

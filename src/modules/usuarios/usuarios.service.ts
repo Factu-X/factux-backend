@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../../config/supabase.js";
+import { invalidateProfileCache } from "../../middlewares/auth.js";
 import { db } from "../../prisma/db.js";
 import { badRequest, conflict, notFound, serviceUnavailable } from "../../shared/http-error.js";
 import { varchar } from "../../shared/prisma-types.js";
@@ -121,6 +122,7 @@ export const updateUsuario = async (id: string, input: UpdateUsuarioInput, actor
     rol: input.rol,
     activo: input.activo,
   });
+  invalidateProfileCache(id);
 
   return getProfileById(id);
 };

@@ -253,8 +253,9 @@ export const createFacturaFromOrden = async (input: CreateFacturaInput, creadaPo
         pdfPath: null,
       });
 
-      for (const detalle of detallesOrden) {
-        await tx.orm.public.DetallesFactura.create({
+      // Una sola insercion para todas las lineas: cada consulta aparte cuesta ~140 ms de red.
+      await tx.orm.public.DetallesFactura.createAll(
+        detallesOrden.map((detalle) => ({
           facturaId: factura.id,
           detalleOrdenId: detalle.id,
           codigoItem: nullableVarchar<50>(detalle.codigoItem),
@@ -265,8 +266,8 @@ export const createFacturaFromOrden = async (input: CreateFacturaInput, creadaPo
           subtotal: detalle.subtotal,
           impuesto: detalle.impuesto,
           total: detalle.total,
-        });
-      }
+        })),
+      );
 
       // Se sube antes del commit: si falla, la factura y el consecutivo se revierten.
       const { error } = await storage.upload(xmlPath(numero), xml, {

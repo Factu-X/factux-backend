@@ -135,15 +135,27 @@ const ordenesConRelaciones = () =>
   db.orm.public.OrdenesServicio.include("cliente").include("motocicleta");
 
 export const listOrdenes = (query: OrdenesQuery) => {
-  if (query.estado || query.clienteId || query.motocicletaId) {
+  // El historial de una moto (HU-05) muestra los items de cada orden: van en la misma consulta, no uno por orden.
+  if (query.motocicletaId) {
+    return ordenesConRelaciones()
+      .include("detallesOrdens", (detalle) => detalle.orderBy((d) => d.createdAt.asc()))
+      .where((orden) =>
+        and(
+          orden.motocicletaId.eq(query.motocicletaId!),
+          query.estado ? orden.estado.eq(query.estado) : orden.id.isNotNull(),
+          query.clienteId ? orden.clienteId.eq(query.clienteId) : orden.id.isNotNull(),
+        ),
+      )
+      .orderBy((orden) => orden.fechaIngreso.desc())
+      .all();
+  }
+
+  if (query.estado || query.clienteId) {
     return ordenesConRelaciones()
       .where((orden) =>
         and(
           query.estado ? orden.estado.eq(query.estado) : orden.id.isNotNull(),
           query.clienteId ? orden.clienteId.eq(query.clienteId) : orden.id.isNotNull(),
-          query.motocicletaId
-            ? orden.motocicletaId.eq(query.motocicletaId)
-            : orden.id.isNotNull(),
         ),
       )
       .orderBy((orden) => orden.fechaIngreso.desc())
@@ -182,13 +194,18 @@ export const recalcularTotalesOrden = async (ordenId: string, client: DbContext 
     })),
   );
 
-  await client.orm.public.OrdenesServicio.where({ id: ordenId }).update({
+  // Devuelve la orden ya actualizada: quien la llama no necesita volver a leerla (cada lectura cuesta ~140 ms).
+  const orden = await client.orm.public.OrdenesServicio.where({ id: ordenId }).update({
     subtotal: numeric<14, 2>(totals.subtotal),
     impuestos: numeric<14, 2>(totals.impuestos),
     total: numeric<14, 2>(totals.total),
   });
 
-  return totals;
+  if (!orden) {
+    throw notFound("Orden de servicio no encontrada");
+  }
+
+  return orden;
 };
 
 export const createOrden = async (input: CreateOrdenInput, creadaPor?: string) => {
@@ -220,10 +237,10 @@ export const createOrden = async (input: CreateOrdenInput, creadaPor?: string) =
         await tx.orm.public.DetallesOrden.create({ ...detalle, ordenId: orden.id });
       }
 
-      await recalcularTotalesOrden(orden.id, tx);
+      const creada = await recalcularTotalesOrden(orden.id, tx);
       await updateMotocicletaKilometraje(input.motocicletaId, input.kilometrajeIngreso, tx);
 
-      return getOrdenByIdWithClient(orden.id, tx);
+      return creada;
     });
   } catch (error) {
     if (isUniqueConstraintError(error)) {
@@ -256,7 +273,8 @@ export const updateOrden = async (id: string, input: UpdateOrdenInput) =>
       assertOrdenFinalizable(detalles.length);
     }
 
-    await tx.orm.public.OrdenesServicio.where({ id }).update({
+    // Los totales solo dependen de los detalles, que aqui no cambian: no hace falta recalcularlos.
+    const actualizada = await tx.orm.public.OrdenesServicio.where({ id }).update({
       clienteId,
       motocicletaId,
       fechaIngreso:
@@ -274,8 +292,7 @@ export const updateOrden = async (id: string, input: UpdateOrdenInput) =>
             ? undefined
             : null,
     });
-
-    await recalcularTotalesOrden(id, tx);
+    if (!actualizada) throw notFound("Orden de servicio no encontrada");
 
     if (input.kilometrajeIngreso !== undefined || input.motocicletaId !== undefined) {
       await updateMotocicletaKilometraje(
@@ -285,7 +302,7 @@ export const updateOrden = async (id: string, input: UpdateOrdenInput) =>
       );
     }
 
-    return getOrdenByIdWithClient(id, tx);
+    return actualizada;
   });
 
 export const addDetalleOrden = async (ordenId: string, input: CreateOrdenDetalleInput) =>
@@ -295,9 +312,7 @@ export const addDetalleOrden = async (ordenId: string, input: CreateOrdenDetalle
 
     const detalle = await buildDetalleSnapshot(input, tx);
     await tx.orm.public.DetallesOrden.create({ ...detalle, ordenId });
-    await recalcularTotalesOrden(ordenId, tx);
-
-    return getOrdenByIdWithClient(ordenId, tx);
+    return recalcularTotalesOrden(ordenId, tx);
   });
 
 export const updateDetalleOrden = async (
@@ -337,7 +352,5 @@ export const deleteDetalleOrden = async (ordenId: string, detalleId: string) =>
     await getDetalleByIdWithClient(ordenId, detalleId, tx);
 
     await tx.orm.public.DetallesOrden.where({ id: detalleId, ordenId }).delete();
-    await recalcularTotalesOrden(ordenId, tx);
-
-    return getOrdenByIdWithClient(ordenId, tx);
+    return recalcularTotalesOrden(ordenId, tx);
   });

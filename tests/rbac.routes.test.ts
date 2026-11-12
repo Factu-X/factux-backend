@@ -31,6 +31,7 @@ vi.mock("../src/modules/cartera/cartera.service.js");
 vi.mock("../src/modules/reportes/reportes.service.js");
 
 const { app } = await import("../src/app.js");
+const { invalidateProfileCache } = await import("../src/middlewares/auth.js");
 
 const ID = "550e8400-e29b-41d4-a716-446655440000";
 
@@ -162,6 +163,7 @@ describe("role based access", () => {
   beforeEach(() => {
     mocks.getClaims.mockReset();
     mocks.findProfile.mockReset();
+    invalidateProfileCache();
   });
 
   for (const [method, path, body, expected] of matrix) {

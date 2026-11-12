@@ -19,6 +19,31 @@ const getBearerToken = (authorizationHeader: string | undefined) => {
   return token;
 };
 
+// Cada consulta a la BD cuesta ~140 ms de red; el profile se guarda 30 s para no pagarlo en cada peticion.
+// shortcut: cache en memoria de un solo proceso; si el backend escala a varias instancias, la
+// desactivacion de un usuario tardaria hasta 30 s en las otras (usar Redis o bajar el TTL).
+const PROFILE_TTL_MS = 30_000;
+type CachedProfile = { id: string; nombre: string; rol: RolUsuario; activo: boolean };
+const profileCache = new Map<string, { profile: CachedProfile; expires: number }>();
+
+// usuarios.service la llama al editar un usuario para que el cambio de rol o activo sea inmediato.
+export const invalidateProfileCache = (userId?: string) => {
+  if (userId) profileCache.delete(userId);
+  else profileCache.clear();
+};
+
+const findProfile = async (userId: string) => {
+  const cached = profileCache.get(userId);
+  if (cached && cached.expires > Date.now()) return cached.profile;
+
+  const row = await db.orm.public.Profiles.first({ id: userId });
+  if (!row) return null;
+
+  const profile = { id: row.id, nombre: row.nombre, rol: row.rol, activo: row.activo };
+  profileCache.set(userId, { profile, expires: Date.now() + PROFILE_TTL_MS });
+  return profile;
+};
+
 export const authenticate: RequestHandler = async (req, _res, next) => {
   try {
     const token = getBearerToken(req.header("Authorization"));
@@ -36,7 +61,7 @@ export const authenticate: RequestHandler = async (req, _res, next) => {
       throw unauthorized("Token invalido o expirado");
     }
 
-    const profile = await db.orm.public.Profiles.first({ id: userId });
+    const profile = await findProfile(userId);
 
     if (!profile) {
       throw unauthorized("El usuario autenticado no tiene profile asociado");

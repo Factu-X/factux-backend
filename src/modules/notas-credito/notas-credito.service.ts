@@ -129,8 +129,9 @@ export const createNotaCredito = async (input: CreateNotaCreditoInput, creadaPor
           pdfPath: null,
         });
 
-        for (const linea of lineas) {
-          await tx.orm.public.DetallesNotaCredito.create({
+        // Una sola insercion para todas las lineas: cada consulta aparte cuesta ~140 ms de red.
+        if (lineas.length) await tx.orm.public.DetallesNotaCredito.createAll(
+          lineas.map((linea) => ({
             notaCreditoId: nota.id,
             detalleFacturaId: linea.detalleFacturaId,
             descripcion: varchar<250>(linea.descripcion),
@@ -140,8 +141,8 @@ export const createNotaCredito = async (input: CreateNotaCreditoInput, creadaPor
             subtotal: numeric<14, 2>(linea.subtotal),
             impuesto: numeric<14, 2>(linea.impuesto),
             total: numeric<14, 2>(linea.total),
-          });
-        }
+          })),
+        );
 
         return nota.id;
       });

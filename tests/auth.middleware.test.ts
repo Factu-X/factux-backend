@@ -16,11 +16,13 @@ vi.mock("../src/prisma/db.js", () => ({
 }));
 
 const { app } = await import("../src/app.js");
+const { invalidateProfileCache } = await import("../src/middlewares/auth.js");
 
 describe("authenticate middleware", () => {
   beforeEach(() => {
     mocks.getClaims.mockReset();
     mocks.findProfile.mockReset();
+    invalidateProfileCache();
   });
 
   it("rejects requests without bearer token", async () => {
@@ -90,5 +92,19 @@ describe("authenticate middleware", () => {
       rol: "FACTURACION",
       activo: true,
     });
+  });
+
+  it("caches the profile so repeated requests skip the database", async () => {
+    mocks.getClaims.mockResolvedValue({ data: { claims: { sub: "u-1" } }, error: null });
+    mocks.findProfile.mockResolvedValue({ id: "u-1", nombre: "Ana", rol: "FACTURACION", activo: true });
+
+    await request(app).get("/api/auth/me").set("Authorization", "Bearer ok").expect(200);
+    await request(app).get("/api/auth/me").set("Authorization", "Bearer ok").expect(200);
+    expect(mocks.findProfile).toHaveBeenCalledTimes(1);
+
+    // Al editar el usuario se invalida y la siguiente peticion ve el cambio de inmediato.
+    invalidateProfileCache("u-1");
+    mocks.findProfile.mockResolvedValue({ id: "u-1", nombre: "Ana", rol: "FACTURACION", activo: false });
+    await request(app).get("/api/auth/me").set("Authorization", "Bearer ok").expect(403);
   });
 });
