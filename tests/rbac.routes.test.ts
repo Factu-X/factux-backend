@@ -25,6 +25,10 @@ vi.mock("../src/modules/ordenes/ordenes.service.js");
 vi.mock("../src/modules/facturas/facturas.service.js");
 vi.mock("../src/modules/usuarios/usuarios.service.js");
 vi.mock("../src/modules/configuracion/configuracion.service.js");
+vi.mock("../src/modules/dian/dian.service.js");
+vi.mock("../src/modules/notas-credito/notas-credito.service.js");
+vi.mock("../src/modules/cartera/cartera.service.js");
+vi.mock("../src/modules/reportes/reportes.service.js");
 
 const { app } = await import("../src/app.js");
 
@@ -135,6 +139,23 @@ const matrix: [Method, string, object | undefined, Record<RolUsuario, number>][]
   ],
   ["get", "/api/usuarios", undefined, { ADMINISTRADOR: 200, FACTURACION: 403, OPERADOR: 403 }],
   ["post", "/api/usuarios", usuario, { ADMINISTRADOR: 201, FACTURACION: 403, OPERADOR: 403 }],
+  ["post", `/api/facturas/${ID}/enviar`, undefined, { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 }],
+  ["get", `/api/facturas/${ID}/envios`, undefined, { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 }],
+  ["get", "/api/notas-credito", undefined, { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 }],
+  [
+    "post",
+    "/api/notas-credito",
+    { facturaId: ID, tipoAjuste: "TOTAL", motivo: "Anulacion por error" },
+    { ADMINISTRADOR: 201, FACTURACION: 201, OPERADOR: 403 },
+  ],
+  ["get", "/api/cartera", undefined, { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 }],
+  [
+    "post",
+    `/api/facturas/${ID}/pagos`,
+    { monto: 1000, metodoPago: "EFECTIVO" },
+    { ADMINISTRADOR: 201, FACTURACION: 201, OPERADOR: 403 },
+  ],
+  ["get", "/api/reportes/facturacion", undefined, { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 }],
 ];
 
 describe("role based access", () => {
@@ -147,17 +168,19 @@ describe("role based access", () => {
     for (const [rol, status] of Object.entries(expected) as [RolUsuario, number][]) {
       it(`${rol} ${method.toUpperCase()} ${path} -> ${status}`, async () => {
         loginAs(rol);
-        await call(method, path, body).expect(status);
+        const response = await call(method, path, body);
+        expect(response.status).toBe(status);
       });
     }
   }
 
   it("lets the operator advance the order state and notes", async () => {
     loginAs("OPERADOR");
-    await call("patch", `/api/ordenes/${ID}`, {
+    const response = await call("patch", `/api/ordenes/${ID}`, {
       estado: "EN_PROCESO",
       observaciones: "Listo",
-    }).expect(200);
+    });
+    expect(response.status).toBe(200);
   });
 
   it("blocks the operator from editing reception data", async () => {
@@ -171,7 +194,8 @@ describe("role based access", () => {
 
   it("blocks the operator from cancelling orders", async () => {
     loginAs("OPERADOR");
-    await call("patch", `/api/ordenes/${ID}`, { estado: "CANCELADA" }).expect(403);
+    const response = await call("patch", `/api/ordenes/${ID}`, { estado: "CANCELADA" });
+    expect(response.status).toBe(403);
   });
 
   it("rejects creating orders already finalized", async () => {
@@ -184,26 +208,46 @@ describe("role based access", () => {
     expect(response.body.error.code).toBe("VALIDATION_ERROR");
   });
 
+  it("validates credit notes and payments before reaching the service", async () => {
+    loginAs("FACTURACION");
+    const responses = await Promise.all([
+      call("post", "/api/notas-credito", { facturaId: ID, tipoAjuste: "PARCIAL", motivo: "Devolucion" }),
+      call("post", "/api/notas-credito", { facturaId: ID, tipoAjuste: "TOTAL", motivo: "x" }),
+      call("post", `/api/facturas/${ID}/pagos`, { monto: 0, metodoPago: "EFECTIVO" }),
+      call("post", `/api/facturas/${ID}/pagos`, { monto: 10.123, metodoPago: "EFECTIVO" }),
+      call("post", `/api/facturas/${ID}/pagos`, { monto: 10, metodoPago: "CHEQUE" }),
+    ]);
+
+    for (const response of responses) {
+      expect(response.status).toBe(400);
+      expect(response.body.error.code).toBe("VALIDATION_ERROR");
+    }
+  });
+
   it("validates user payloads before reaching the service", async () => {
     loginAs("ADMINISTRADOR");
-    await call("post", "/api/usuarios", { ...usuario, password: "corta" }).expect(400);
-    await call("post", "/api/usuarios", { ...usuario, rol: "SUPERUSUARIO" }).expect(400);
+    const corta = await call("post", "/api/usuarios", { ...usuario, password: "corta" });
+    const rol = await call("post", "/api/usuarios", { ...usuario, rol: "SUPERUSUARIO" });
+    expect(corta.status).toBe(400);
+    expect(rol.status).toBe(400);
   });
 
   it("rejects a numbering range that ends before it starts", async () => {
     loginAs("ADMINISTRADOR");
-    await call("put", "/api/configuracion/numeracion", {
+    const response = await call("put", "/api/configuracion/numeracion", {
       ...numeracion,
       rangoDesde: 10,
       rangoHasta: 5,
-    }).expect(400);
+    });
+    expect(response.status).toBe(400);
   });
 
   it("rejects prefixes longer than the DIAN allows", async () => {
     loginAs("ADMINISTRADOR");
-    await call("put", "/api/configuracion/numeracion", {
+    const response = await call("put", "/api/configuracion/numeracion", {
       ...numeracion,
       prefijoFacturacion: "FACTX",
-    }).expect(400);
+    });
+    expect(response.status).toBe(400);
   });
 });

@@ -14,7 +14,7 @@ const isTest = process.env["NODE_ENV"] === "test";
 export const app = express();
 
 app.use(helmet());
-app.use(cors(env.CORS_ORIGINS.length > 0 ? { origin: env.CORS_ORIGINS } : undefined));
+app.use(cors({ origin: env.CORS_ORIGINS }));
 app.use(express.json());
 
 if (!isTest) {

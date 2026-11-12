@@ -11,12 +11,12 @@ const envSchema = z.object({
     .min(1, "SUPABASE_PUBLISHABLE_KEY es obligatoria"),
   // Opcional: solo se necesita para crear usuarios en Supabase Auth desde la API.
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
-  // Lista separada por comas. Vacia = cualquier origen (solo desarrollo).
+  // Lista separada por comas. Nunca se abre a cualquier origen; por defecto el front local.
   CORS_ORIGINS: z
     .string()
-    .optional()
+    .default("http://localhost:5173")
     .transform((value) =>
-      (value ?? "")
+      value
         .split(",")
         .map((origin) => origin.trim())
         .filter(Boolean),
