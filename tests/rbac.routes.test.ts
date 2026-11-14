@@ -29,6 +29,8 @@ vi.mock("../src/modules/dian/dian.service.js");
 vi.mock("../src/modules/notas-credito/notas-credito.service.js");
 vi.mock("../src/modules/cartera/cartera.service.js");
 vi.mock("../src/modules/reportes/reportes.service.js");
+vi.mock("../src/modules/recordatorios/recordatorios.service.js");
+vi.mock("../src/modules/usabilidad/usabilidad.service.js");
 
 const { app } = await import("../src/app.js");
 const { invalidateProfileCache } = await import("../src/middlewares/auth.js");
@@ -157,6 +159,40 @@ const matrix: [Method, string, object | undefined, Record<RolUsuario, number>][]
     { ADMINISTRADOR: 201, FACTURACION: 201, OPERADOR: 403 },
   ],
   ["get", "/api/reportes/facturacion", undefined, { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 }],
+  ["get", "/api/recordatorios", undefined, { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 }],
+  [
+    "post",
+    "/api/recordatorios",
+    { motocicletaId: ID, tipoMantenimiento: "Cambio de aceite", fechaObjetivo: "2026-12-01" },
+    { ADMINISTRADOR: 201, FACTURACION: 201, OPERADOR: 403 },
+  ],
+  [
+    "patch",
+    `/api/recordatorios/${ID}/estado`,
+    { estado: "CANCELADO" },
+    { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 },
+  ],
+  ["post", "/api/recordatorios/notificar", undefined, { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 }],
+  ["post", `/api/recordatorios/${ID}/notificar`, undefined, { ADMINISTRADOR: 200, FACTURACION: 200, OPERADOR: 403 }],
+  ["get", "/api/usabilidad/tareas-base", undefined, { ADMINISTRADOR: 200, FACTURACION: 403, OPERADOR: 403 }],
+  ["get", "/api/usabilidad/sesiones", undefined, { ADMINISTRADOR: 200, FACTURACION: 403, OPERADOR: 403 }],
+  ["get", "/api/usabilidad/informe", undefined, { ADMINISTRADOR: 200, FACTURACION: 403, OPERADOR: 403 }],
+  [
+    "post",
+    "/api/usabilidad/sesiones",
+    {
+      participante: "Carlos",
+      susRespuestas: [4, 2, 5, 1, 4, 2, 5, 1, 4, 2],
+      tareas: [{ tarea: "Crear una orden", completada: true }],
+    },
+    { ADMINISTRADOR: 201, FACTURACION: 403, OPERADOR: 403 },
+  ],
+  [
+    "patch",
+    `/api/usabilidad/hallazgos/${ID}`,
+    { resuelto: true },
+    { ADMINISTRADOR: 200, FACTURACION: 403, OPERADOR: 403 },
+  ],
 ];
 
 describe("role based access", () => {
@@ -232,6 +268,21 @@ describe("role based access", () => {
     const rol = await call("post", "/api/usuarios", { ...usuario, rol: "SUPERUSUARIO" });
     expect(corta.status).toBe(400);
     expect(rol.status).toBe(400);
+  });
+
+  it("validates reminder and usability payloads before reaching the service", async () => {
+    loginAs("ADMINISTRADOR");
+    const responses = await Promise.all([
+      call("post", "/api/recordatorios", { motocicletaId: ID, tipoMantenimiento: "Aceite" }),
+      call("patch", `/api/recordatorios/${ID}/estado`, { estado: "PENDIENTE", siguiente: { fechaObjetivo: "2026-12-01" } }),
+      call("post", "/api/usabilidad/sesiones", { participante: "Ana", susRespuestas: [1, 2, 3], tareas: [{ tarea: "x", completada: true }] }),
+      call("post", "/api/usabilidad/sesiones", { participante: "Ana", susRespuestas: [4, 2, 5, 1, 4, 2, 5, 1, 4, 9], tareas: [{ tarea: "x", completada: true }] }),
+    ]);
+
+    for (const response of responses) {
+      expect(response.status).toBe(400);
+      expect(response.body.error.code).toBe("VALIDATION_ERROR");
+    }
   });
 
   it("rejects a numbering range that ends before it starts", async () => {

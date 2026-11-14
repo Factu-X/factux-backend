@@ -22,6 +22,10 @@ const envSchema = z.object({
         .filter(Boolean),
     ),
   RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(300),
+  // HU-11: correo de recordatorios via Resend (https://resend.com). Opcionales: sin ellas el resto de la API
+  // funciona y solo el envio de notificaciones responde 503.
+  RESEND_API_KEY: z.string().min(1).optional(),
+  EMAIL_FROM: z.string().min(3).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

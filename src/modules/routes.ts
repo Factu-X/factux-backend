@@ -12,7 +12,9 @@ import {
 } from "./motocicletas/motocicletas.routes.js";
 import { notasCreditoRouter } from "./notas-credito/notas-credito.routes.js";
 import { ordenesRouter } from "./ordenes/ordenes.routes.js";
+import { recordatoriosRouter } from "./recordatorios/recordatorios.routes.js";
 import { reportesRouter } from "./reportes/reportes.routes.js";
+import { usabilidadRouter } from "./usabilidad/usabilidad.routes.js";
 import { usuariosRouter } from "./usuarios/usuarios.routes.js";
 
 export const apiRouter = Router();
@@ -29,3 +31,5 @@ apiRouter.use("/usuarios", usuariosRouter);
 apiRouter.use("/notas-credito", notasCreditoRouter);
 apiRouter.use("/cartera", carteraRouter);
 apiRouter.use("/reportes", reportesRouter);
+apiRouter.use("/recordatorios", recordatoriosRouter);
+apiRouter.use("/usabilidad", usabilidadRouter);

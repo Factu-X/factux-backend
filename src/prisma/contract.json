@@ -63,6 +63,18 @@
     "recordatorios_mantenimiento": {
       "model": "RecordatoriosMantenimiento",
       "namespace": "public"
+    },
+    "usabilidad_hallazgos": {
+      "model": "UsabilidadHallazgos",
+      "namespace": "public"
+    },
+    "usabilidad_sesiones": {
+      "model": "UsabilidadSesiones",
+      "namespace": "public"
+    },
+    "usabilidad_tareas": {
+      "model": "UsabilidadTareas",
+      "namespace": "public"
     }
   },
   "domain": {
@@ -2965,6 +2977,21 @@
                   "model": "RecordatoriosMantenimiento",
                   "namespace": "public"
                 }
+              },
+              "usabilidadSesiones": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "creadaPor"
+                  ]
+                },
+                "to": {
+                  "model": "UsabilidadSesiones",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -3187,6 +3214,399 @@
               "namespaceId": "public",
               "table": "recordatorios_mantenimiento"
             }
+          },
+          "UsabilidadHallazgos": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "descripcion": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "enBacklog": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "pantalla": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 100
+                  }
+                }
+              },
+              "prioridad": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 10
+                  }
+                }
+              },
+              "resuelto": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "sesionId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "sesion": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "sesionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "UsabilidadSesiones",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "descripcion": {
+                  "column": "descripcion"
+                },
+                "enBacklog": {
+                  "column": "en_backlog"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "pantalla": {
+                  "column": "pantalla"
+                },
+                "prioridad": {
+                  "column": "prioridad"
+                },
+                "resuelto": {
+                  "column": "resuelto"
+                },
+                "sesionId": {
+                  "column": "sesion_id"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "usabilidad_hallazgos"
+            }
+          },
+          "UsabilidadSesiones": {
+            "fields": {
+              "creadaPor": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "fechaSesion": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/date-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "observaciones": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "participante": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 150
+                  }
+                }
+              },
+              "perfil": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 200
+                  }
+                }
+              },
+              "susPuntaje": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 5,
+                    "scale": 2
+                  }
+                }
+              },
+              "susRespuestas": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "hallazgos": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "sesionId"
+                  ]
+                },
+                "to": {
+                  "model": "UsabilidadHallazgos",
+                  "namespace": "public"
+                }
+              },
+              "profiles": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "creadaPor"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Profiles",
+                  "namespace": "public"
+                }
+              },
+              "tareas": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "sesionId"
+                  ]
+                },
+                "to": {
+                  "model": "UsabilidadTareas",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "creadaPor": {
+                  "column": "creada_por"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "fechaSesion": {
+                  "column": "fecha_sesion"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "observaciones": {
+                  "column": "observaciones"
+                },
+                "participante": {
+                  "column": "participante"
+                },
+                "perfil": {
+                  "column": "perfil"
+                },
+                "susPuntaje": {
+                  "column": "sus_puntaje"
+                },
+                "susRespuestas": {
+                  "column": "sus_respuestas"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "usabilidad_sesiones"
+            }
+          },
+          "UsabilidadTareas": {
+            "fields": {
+              "completada": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "errores": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "observaciones": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "sesionId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "tarea": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 250
+                  }
+                }
+              }
+            },
+            "relations": {
+              "sesion": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "sesionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "UsabilidadSesiones",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "completada": {
+                  "column": "completada"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "errores": {
+                  "column": "errores"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "observaciones": {
+                  "column": "observaciones"
+                },
+                "sesionId": {
+                  "column": "sesion_id"
+                },
+                "tarea": {
+                  "column": "tarea"
+                }
+              },
+              "namespaceId": "public",
+              "table": "usabilidad_tareas"
+            }
           }
         }
       }
@@ -3383,6 +3803,21 @@
               "kind": "rls",
               "namespaceId": "public",
               "tableName": "recordatorios_mantenimiento"
+            },
+            "usabilidad_hallazgos": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "usabilidad_hallazgos"
+            },
+            "usabilidad_sesiones": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "usabilidad_sesiones"
+            },
+            "usabilidad_tareas": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "usabilidad_tareas"
             }
           },
           "table": {
@@ -6105,6 +6540,345 @@
                 "name": "recordatorios_mantenimiento_pkey"
               },
               "uniques": []
+            },
+            "usabilidad_hallazgos": {
+              "checks": [
+                {
+                  "expression": "((prioridad)::text = ANY ((ARRAY['CRITICA'::character varying, 'ALTA'::character varying, 'MEDIA'::character varying, 'BAJA'::character varying])::text[]))",
+                  "name": "chk_usabilidad_hallazgo_prioridad"
+                }
+              ],
+              "columns": {
+                "created_at": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "descripcion": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "en_backlog": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "pantalla": {
+                  "codecId": "sql/varchar@1",
+                  "nativeType": "character varying",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 100
+                  }
+                },
+                "prioridad": {
+                  "codecId": "sql/varchar@1",
+                  "nativeType": "character varying",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 10
+                  }
+                },
+                "resuelto": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
+                },
+                "sesion_id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "name": "usabilidad_hallazgos_sesion_id_fkey",
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "sesion_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "usabilidad_hallazgos"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "usabilidad_sesiones"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "sesion_id"
+                  ],
+                  "name": "idx_usabilidad_hallazgos_sesion",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ],
+                "name": "usabilidad_hallazgos_pkey"
+              },
+              "uniques": []
+            },
+            "usabilidad_sesiones": {
+              "checks": [
+                {
+                  "expression": "((sus_puntaje >= (0)::numeric) AND (sus_puntaje <= (100)::numeric))",
+                  "name": "chk_usabilidad_sus_puntaje"
+                }
+              ],
+              "columns": {
+                "creada_por": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": true
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "fecha_sesion": {
+                  "codecId": "pg/date-temporal@1",
+                  "default": {
+                    "expression": "CURRENT_DATE",
+                    "kind": "function"
+                  },
+                  "nativeType": "date",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "observaciones": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "participante": {
+                  "codecId": "sql/varchar@1",
+                  "nativeType": "character varying",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 150
+                  }
+                },
+                "perfil": {
+                  "codecId": "sql/varchar@1",
+                  "nativeType": "character varying",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 200
+                  }
+                },
+                "sus_puntaje": {
+                  "codecId": "pg/numeric@1",
+                  "nativeType": "numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 5,
+                    "scale": 2
+                  }
+                },
+                "sus_respuestas": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "name": "usabilidad_sesiones_creada_por_fkey",
+                  "onDelete": "setNull",
+                  "source": {
+                    "columns": [
+                      "creada_por"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "usabilidad_sesiones"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "profiles"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "fecha_sesion"
+                  ],
+                  "name": "idx_usabilidad_sesiones_fecha",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ],
+                "name": "usabilidad_sesiones_pkey"
+              },
+              "uniques": []
+            },
+            "usabilidad_tareas": {
+              "checks": [
+                {
+                  "expression": "(errores >= 0)",
+                  "name": "chk_usabilidad_tarea_errores"
+                }
+              ],
+              "columns": {
+                "completada": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "errores": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "observaciones": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "sesion_id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "tarea": {
+                  "codecId": "sql/varchar@1",
+                  "nativeType": "character varying",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 250
+                  }
+                }
+              },
+              "foreignKeys": [
+                {
+                  "name": "usabilidad_tareas_sesion_id_fkey",
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "sesion_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "usabilidad_tareas"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "usabilidad_sesiones"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "sesion_id"
+                  ],
+                  "name": "idx_usabilidad_tareas_sesion",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ],
+                "name": "usabilidad_tareas_pkey"
+              },
+              "uniques": []
             }
           },
           "valueSet": {
@@ -6212,7 +6986,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "34b579c8070956d2e734733f5626398a0f630cac06caf3f11b203b5ac95a4d13"
+    "storageHash": "a4896dd5955d7f40d9fc8fc3b1d69ef2e8c161fc3b8c7c90121b57f28dc73922"
   },
   "capabilities": {
     "postgres": {
