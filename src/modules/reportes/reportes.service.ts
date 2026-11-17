@@ -38,7 +38,7 @@ const agrupar = <T>(filas: T[], clave: (fila: T) => string) => {
 export const getReporteFacturacion = async (query: ReporteFacturacionQuery) => {
   const { desde, hasta, inicio, fin } = rangoDelReporte(query);
 
-  const [facturas, notas, pagos, cartera] = await Promise.all([
+  const [facturas, notas, pagos, cartera, ordenes] = await Promise.all([
     db.orm.public.Facturas
       .where((f) => and(f.fechaEmision.gte(inicio), f.fechaEmision.lt(fin)))
       .include("cliente", (c) => c.select("id", "nombreRazonSocial", "numeroIdentificacion"))
@@ -50,6 +50,10 @@ export const getReporteFacturacion = async (query: ReporteFacturacionQuery) => {
       .all(),
     db.orm.public.Pagos.where((p) => and(p.fechaPago.gte(inicio), p.fechaPago.lt(fin))).select("monto", "metodoPago").all(),
     getCartera({ filtro: "CON_SALDO" }),
+    // HU-09: ordenes finalizadas dentro del rango, por la fecha en que se cerraron.
+    db.orm.public.OrdenesServicio
+      .where((o) => and(o.estado.eq("FINALIZADA"), o.finalizadaAt.gte(inicio), o.finalizadaAt.lt(fin)))
+      .aggregate((a) => ({ total: a.count() })),
   ]);
 
   const facturado = sumar(facturas, (f) => f.total);
@@ -100,6 +104,7 @@ export const getReporteFacturacion = async (query: ReporteFacturacionQuery) => {
       notasCredito: pesos(notasCredito),
       neto: pesos(facturado - notasCredito),
       recaudado: pesos(sumar(pagos, (p) => p.monto)),
+      ordenesFinalizadas: Number(ordenes.total),
       ticketPromedio: pesos(facturas.length > 0 ? facturado / BigInt(facturas.length) : 0n),
     },
     porEstadoDian: contar(facturas.map((f) => f.estadoDian)),
