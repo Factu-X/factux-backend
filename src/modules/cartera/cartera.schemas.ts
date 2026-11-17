@@ -1,8 +1,16 @@
 import { z } from "zod";
 
-export const carteraQuerySchema = z.object({
-  filtro: z.enum(["CON_SALDO", "VENCIDAS", "TODAS"]).default("CON_SALDO"),
-});
+export const carteraQuerySchema = z
+  .object({
+    filtro: z.enum(["CON_SALDO", "VENCIDAS", "TODAS"]).default("CON_SALDO"),
+    // HU-10: rango opcional sobre la fecha de emision de la factura.
+    desde: z.iso.date("Debe ser una fecha YYYY-MM-DD").optional(),
+    hasta: z.iso.date("Debe ser una fecha YYYY-MM-DD").optional(),
+  })
+  .refine((q) => !q.desde || !q.hasta || q.desde <= q.hasta, {
+    message: "La fecha inicial debe ser anterior o igual a la final",
+    path: ["desde"],
+  });
 
 export const registrarPagoSchema = z
   .object({

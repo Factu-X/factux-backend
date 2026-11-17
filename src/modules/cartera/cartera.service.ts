@@ -74,8 +74,14 @@ export const getCartera = async (query: CarteraQuery) => {
     porAntiguedad[cuenta.antiguedad] += centavos(cuenta.saldo);
   }
 
-  const visibles = cuentas.filter((c) =>
-    query.filtro === "TODAS" ? true : query.filtro === "VENCIDAS" ? conSaldo(c) && c.diasVencida > 0 : conSaldo(c),
+  const emitidaEn = (c: { fechaEmision: Temporal.Instant }) => c.fechaEmision.toZonedDateTimeISO("America/Bogota").toPlainDate().toString();
+
+  // El resumen es la foto completa de hoy; el rango de fechas solo acota la lista.
+  const visibles = cuentas.filter(
+    (c) =>
+      (query.filtro === "TODAS" ? true : query.filtro === "VENCIDAS" ? conSaldo(c) && c.diasVencida > 0 : conSaldo(c)) &&
+      (!query.desde || emitidaEn(c) >= query.desde) &&
+      (!query.hasta || emitidaEn(c) <= query.hasta),
   );
 
   return {
