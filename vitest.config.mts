@@ -8,7 +8,7 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "lcov"],
       include: ["src/**/*.ts"],
-      exclude: ["src/prisma/**", "src/server.ts", "src/types/**"],
+      exclude: ["src/prisma/**", "src/server.ts", "src/types/**", "src/scripts/**"],
     },
   },
 });
