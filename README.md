@@ -4,29 +4,26 @@ Backend REST para FactuX, sistema interno de gestion, ordenes de servicio y fact
 
 ## Estado Actual
 
-Implementado:
+Implementado (HU-01 a HU-14):
 
-- Autenticacion con Supabase Auth y JWT Bearer.
-- Perfil y rol desde `public.profiles`.
-- RBAC con roles `ADMINISTRADOR`, `FACTURACION` y `OPERADOR`.
-- Gestion de usuarios (crear en Supabase Auth, cambiar rol, activar/desactivar).
-- Clientes.
-- Motocicletas.
-- Catalogo de servicios/repuestos.
-- Ordenes de servicio con detalles y calculo automatico de totales.
-- Facturas internas generadas desde ordenes finalizadas.
-- Seed demo idempotente con empresa, clientes, motos, catalogo, orden y factura demo.
-- Tests, lint, typecheck, build y GitHub Actions CI.
-- SonarCloud preparado como siguiente capa.
+- Autenticacion con Supabase Auth y JWT Bearer; perfil y rol desde `public.profiles`.
+- RBAC con roles `ADMINISTRADOR`, `FACTURACION` y `OPERADOR`, y gestion de usuarios.
+- Clientes, motocicletas, catalogo de servicios y repuestos.
+- Ordenes de servicio con calculo automatico de totales e historial por motocicleta.
+- Configuracion de empresa y resolucion de numeracion DIAN (secretos en Supabase Vault).
+- Factura electronica desde la orden: XML UBL 2.1, CUFE, firma XAdES-EPES, PDF con QR.
+- Envio a un simulador DIAN detras de la interfaz `DianGateway`, con historial de intentos.
+- Notas credito totales y parciales con CUDE.
+- Cartera por antiguedad con filtro por fecha de emision y registro de pagos.
+- Reporte de facturacion (facturado, neto, recaudo, ordenes finalizadas, tops).
+- Recordatorios de mantenimiento con aviso por correo (Resend), manual y automatico cada 6 h.
+- Pruebas de usabilidad con cuestionario SUS, hallazgos por prioridad e informe.
+- Tests, lint, typecheck, build, GitHub Actions CI y SonarCloud.
 
-No implementado todavia:
+Fuera del alcance o pendiente:
 
-- Envio DIAN.
-- CUFE real.
-- XML/PDF fiscal real.
-- Notas credito.
-- Cuentas por cobrar.
-- Dashboard real.
+- Conexion SOAP real con la DIAN (requiere NIT habilitado y certificado acreditado).
+- Despliegue publico (procedimiento previsto en la documentacion tecnica).
 
 ## Stack
 
@@ -77,6 +74,10 @@ SUPABASE_URL="https://tu-proyecto.supabase.co"
 SUPABASE_PUBLISHABLE_KEY="..."
 # Solo para POST /api/usuarios. Sin ella el resto de la API funciona y crear usuarios responde 503.
 SUPABASE_SERVICE_ROLE_KEY="..."
+CORS_ORIGINS="http://localhost:8443"
+# HU-11: sin estas dos, el envio de recordatorios responde 503 y el envio automatico queda apagado.
+RESEND_API_KEY="..."
+EMAIL_FROM="Taller <avisos@tudominio.co>"
 ```
 
 No commitear `.env`. No exponer `SERVICE_ROLE_KEY` al frontend.
@@ -103,6 +104,8 @@ destructivas (por ejemplo, borrar `profiles_id_fkey`, que apunta a `auth.users` 
 Despues de aplicarlo: `npx prisma db sign`.
 
 - `2026-10-14-add-rol-facturacion.sql` (aplicado el 2026-10-14).
+- `2026-10-15-hu13-hu06-configuracion-facturacion.sql` (configuracion DIAN, Vault y bucket privado).
+- `2026-11-13-hu14-usabilidad.sql` (tablas de pruebas de usabilidad).
 
 ## Comandos
 
