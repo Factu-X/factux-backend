@@ -136,7 +136,8 @@ describe("recordatorios: notificarVencidos", () => {
     mocks.enviar.mockRejectedValueOnce(new Error("503")).mockResolvedValueOnce(undefined);
 
     expect(await notificarVencidos()).toEqual({ revisados: 2, enviados: 1, sinCorreo: 0, fallidos: 1 });
-    expect(mocks.update).toHaveBeenCalledTimes(1);
+    // a: marca y libera al fallar; b: marca y queda enviado.
+    expect(mocks.update).toHaveBeenCalledTimes(3);
   });
 
   it("responde 503 si el correo no esta configurado", async () => {

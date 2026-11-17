@@ -105,7 +105,9 @@ export const calcularResumen = (sesiones: SesionResumen[]) => {
   };
 };
 
-const celda = (texto: string | null) => (texto ?? "-").replaceAll("|", "/").replaceAll("\n", " ");
+// Texto libre dentro de una tabla Markdown: sin saltos (\r incluido) ni barras que rompan la fila, ni HTML crudo.
+export const celda = (texto: string | null) =>
+  (texto ?? "-").replaceAll("|", "/").replace(/\r\n|\r|\n/g, " ").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 
 // Documento de resultados del piloto (criterio final de HU-14): se descarga desde la pantalla.
 export const generarInforme = (sesiones: SesionResumen[], generadoEn: string): string => {

@@ -7,7 +7,7 @@ import { badRequest, conflict, notFound, serviceUnavailable } from "../../shared
 import { varchar } from "../../shared/prisma-types.js";
 import { hoyColombia, nowInstant } from "../../shared/time.js";
 import { getMotocicletaById } from "../motocicletas/motocicletas.service.js";
-import { asuntoCorreo, evaluarVencimiento, textoCorreo } from "./recordatorios.rules.js";
+import { asuntoCorreo, evaluarVencimiento, textoCorreo, transicionPermitida } from "./recordatorios.rules.js";
 import type { CambiarEstadoInput, CreateRecordatorioInput, RecordatoriosQuery } from "./recordatorios.schemas.js";
 
 const recordatoriosConMoto = () =>
@@ -64,7 +64,23 @@ const datosNuevoRecordatorio = (
 });
 
 export const createRecordatorio = async (input: CreateRecordatorioInput, creadoPor?: string) => {
-  await getMotocicletaById(input.motocicletaId);
+  const moto = await getMotocicletaById(input.motocicletaId);
+
+  if (!moto.activa) {
+    throw badRequest("La motocicleta esta inactiva");
+  }
+
+  if (input.ordenOrigenId) {
+    const orden = await db.orm.public.OrdenesServicio.where({ id: input.ordenOrigenId }).first();
+
+    if (!orden) {
+      throw notFound("La orden de origen no existe");
+    }
+
+    if (orden.motocicletaId !== input.motocicletaId) {
+      throw badRequest("La orden de origen es de otra motocicleta");
+    }
+  }
 
   try {
     const creado = await db.orm.public.RecordatoriosMantenimiento.create({
@@ -86,15 +102,27 @@ export const createRecordatorio = async (input: CreateRecordatorioInput, creadoP
 
 export const cambiarEstadoRecordatorio = async (id: string, input: CambiarEstadoInput, usuarioId?: string) => {
   const actual = await getRecordatorioById(id);
+
+  if (!transicionPermitida(actual.estado, input.estado)) {
+    throw conflict(`No se puede pasar un recordatorio de ${actual.estado} a ${input.estado}`);
+  }
+
   const ahora = nowInstant();
 
   await db.transaction(async (tx) => {
-    await tx.orm.public.RecordatoriosMantenimiento.where({ id }).update({
+    // Filtrar por el estado leido evita que dos peticiones simultaneas apliquen la misma transicion.
+    const actualizado = await tx.orm.public.RecordatoriosMantenimiento.where({ id, estado: actual.estado }).update({
       estado: input.estado,
       // Completar fija la fecha; volver a pendiente o cancelar la limpia.
       completadoAt: input.estado === "COMPLETADO" ? ahora : null,
+      // Reabrir inicia un ciclo nuevo: el cliente debe poder recibir otro aviso.
+      ...(input.estado === "PENDIENTE" ? { notificacionEnviadaAt: null } : {}),
       updatedAt: ahora,
     });
+
+    if (!actualizado) {
+      throw conflict("El recordatorio cambio mientras se actualizaba; recarga e intenta de nuevo");
+    }
 
     // El historial se conserva: el siguiente servicio es un recordatorio nuevo, no una edicion del anterior.
     if (input.siguiente) {
@@ -126,8 +154,8 @@ const exigirCorreoConfigurado = () => {
   }
 };
 
-// Envia el aviso y solo entonces marca notificacionEnviadaAt: si el proveedor falla, el recordatorio
-// sigue sin notificar y se puede reintentar. Un cliente sin correo no es un error: queda pendiente.
+// Marca notificacionEnviadaAt antes de enviar y la libera si el proveedor falla: asi un fallo al guardar
+// despues del envio no provoca un segundo correo. Un cliente sin correo no es un error: queda pendiente.
 const notificar = async (
   recordatorio: ReturnType<typeof conVencimiento>,
   taller: string,
@@ -139,42 +167,40 @@ const notificar = async (
     return "SIN_CORREO";
   }
 
-  await enviarCorreo({
-    para: correo,
-    asunto: asuntoCorreo(taller),
-    texto: textoCorreo({
-      cliente: cliente.nombreRazonSocial,
-      taller,
-      placa: recordatorio.motocicleta?.placa ?? "",
-      tipoMantenimiento: recordatorio.tipoMantenimiento,
-      fechaObjetivo: recordatorio.fechaObjetivo?.toString() ?? null,
-      kilometrajeObjetivo: recordatorio.kilometrajeObjetivo,
-    }),
-  });
+  const marcar = (valor: Temporal.Instant | null) =>
+    db.orm.public.RecordatoriosMantenimiento
+      .where({ id: recordatorio.id })
+      .update({ notificacionEnviadaAt: valor, updatedAt: nowInstant() });
 
-  const ahora = nowInstant();
-  await db.orm.public.RecordatoriosMantenimiento
-    .where({ id: recordatorio.id })
-    .update({ notificacionEnviadaAt: ahora, updatedAt: ahora });
+  await marcar(nowInstant());
+
+  try {
+    await enviarCorreo({
+      para: correo,
+      asunto: asuntoCorreo(taller),
+      texto: textoCorreo({
+        cliente: cliente.nombreRazonSocial,
+        taller,
+        placa: recordatorio.motocicleta?.placa ?? "",
+        tipoMantenimiento: recordatorio.tipoMantenimiento,
+        fechaObjetivo: recordatorio.fechaObjetivo?.toString() ?? null,
+        kilometrajeObjetivo: recordatorio.kilometrajeObjetivo,
+      }),
+    });
+  } catch (error) {
+    await marcar(null);
+    throw error;
+  }
 
   return "ENVIADO";
 };
 
 // Evita que dos clics seguidos (o dos usuarios) manden el mismo aviso dos veces mientras corre un envio.
+// shortcut: candado en memoria, vale para una sola instancia del API; con varias, usar un update condicionado en BD.
 let enCurso = false;
 
 export const notificarRecordatorio = async (id: string) => {
   exigirCorreoConfigurado();
-
-  const recordatorio = await getRecordatorioById(id);
-
-  if (recordatorio.estado !== "PENDIENTE") {
-    throw badRequest("Solo se notifican recordatorios pendientes");
-  }
-
-  if (recordatorio.notificacionEnviadaAt) {
-    throw conflict("Este recordatorio ya fue notificado al cliente");
-  }
 
   if (enCurso) {
     throw conflict("Ya hay un envio de notificaciones en curso");
@@ -183,6 +209,17 @@ export const notificarRecordatorio = async (id: string) => {
   enCurso = true;
 
   try {
+    // Se lee con el candado tomado: otra peticion no puede haber notificado entre la lectura y el envio.
+    const recordatorio = await getRecordatorioById(id);
+
+    if (recordatorio.estado !== "PENDIENTE") {
+      throw badRequest("Solo se notifican recordatorios pendientes");
+    }
+
+    if (recordatorio.notificacionEnviadaAt) {
+      throw conflict("Este recordatorio ya fue notificado al cliente");
+    }
+
     return { resultado: await notificar(recordatorio, await nombreTaller()) };
   } finally {
     enCurso = false;

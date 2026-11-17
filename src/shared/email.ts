@@ -1,4 +1,5 @@
 import { env } from "../config/env.js";
+import { serviceUnavailable } from "./http-error.js";
 
 export type CorreoSaliente = {
   para: string;
@@ -25,6 +26,6 @@ export const enviarCorreo = async ({ para, asunto, texto }: CorreoSaliente) => {
   });
 
   if (!respuesta.ok) {
-    throw new Error(`El proveedor de correo respondio ${respuesta.status}`);
+    throw serviceUnavailable(`El proveedor de correo rechazo el envio (HTTP ${respuesta.status}). Revisa RESEND_API_KEY y EMAIL_FROM`);
   }
 };

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { hoyColombia } from "../../shared/time.js";
 import { PRIORIDADES, SUS_PREGUNTAS } from "./usabilidad.rules.js";
 
 export const sesionIdParamsSchema = z.object({ id: z.uuid() });
@@ -9,7 +10,10 @@ export const createSesionSchema = z
   .object({
     participante: z.string().trim().min(1, "El nombre del participante es obligatorio").max(150),
     perfil: z.string().trim().max(200).nullable().optional(),
-    fechaSesion: z.iso.date("Debe ser una fecha YYYY-MM-DD").optional(),
+    fechaSesion: z.iso
+      .date("Debe ser una fecha YYYY-MM-DD")
+      .refine((fecha) => fecha <= hoyColombia(), "La fecha de la sesion no puede ser futura")
+      .optional(),
     observaciones: z.string().trim().max(4000).nullable().optional(),
     susRespuestas: z
       .array(z.number().int().min(1, "Las respuestas van de 1 a 5").max(5, "Las respuestas van de 1 a 5"))

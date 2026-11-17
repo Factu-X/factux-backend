@@ -24,8 +24,9 @@ const envSchema = z.object({
   RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(300),
   // HU-11: correo de recordatorios via Resend (https://resend.com). Opcionales: sin ellas el resto de la API
   // funciona y solo el envio de notificaciones responde 503.
-  RESEND_API_KEY: z.string().min(1).optional(),
-  EMAIL_FROM: z.string().min(3).optional(),
+  // Copiar .env.example deja estas variables en "": se tratan como no definidas en vez de tumbar el arranque.
+  RESEND_API_KEY: z.preprocess((v) => (v === "" ? undefined : v), z.string().min(1).optional()),
+  EMAIL_FROM: z.preprocess((v) => (v === "" ? undefined : v), z.string().min(3).optional()),
 });
 
 const parsed = envSchema.safeParse(process.env);

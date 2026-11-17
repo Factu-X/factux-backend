@@ -1,5 +1,16 @@
 export type EstadoRecordatorio = "PENDIENTE" | "COMPLETADO" | "CANCELADO";
 
+// Pendiente se completa o cancela; completado y cancelado solo se reabren. Repetir el mismo estado
+// (doble clic, reintento) no es una transicion y duplicaria el "siguiente" recordatorio.
+const TRANSICIONES: Record<EstadoRecordatorio, readonly EstadoRecordatorio[]> = {
+  PENDIENTE: ["COMPLETADO", "CANCELADO"],
+  COMPLETADO: ["PENDIENTE"],
+  CANCELADO: ["PENDIENTE"],
+};
+
+export const transicionPermitida = (actual: EstadoRecordatorio, nuevo: EstadoRecordatorio) =>
+  TRANSICIONES[actual].includes(nuevo);
+
 type EntradaVencimiento = {
   estado: EstadoRecordatorio;
   // YYYY-MM-DD, o null si el recordatorio es solo por kilometraje.
