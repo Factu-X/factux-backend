@@ -34,7 +34,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'34b579c8070956d2e734733f5626398a0f630cac06caf3f11b203b5ac95a4d13'>;
+  StorageHashBase<'a4896dd5955d7f40d9fc8fc3b1d69ef2e8c161fc3b8c7c90121b57f28dc73922'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -464,6 +464,38 @@ export type FieldOutputTypes = {
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
+    readonly UsabilidadHallazgos: {
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly sesionId: CodecTypes['pg/uuid@1']['output'];
+      readonly descripcion: CodecTypes['pg/text@1']['output'];
+      readonly pantalla: Varchar<100> | null;
+      readonly prioridad: Varchar<10>;
+      readonly enBacklog: CodecTypes['pg/bool@1']['output'];
+      readonly resuelto: CodecTypes['pg/bool@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    };
+    readonly UsabilidadSesiones: {
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly participante: Varchar<150>;
+      readonly perfil: Varchar<200> | null;
+      readonly fechaSesion: CodecTypes['pg/date-temporal@1']['output'];
+      readonly observaciones: CodecTypes['pg/text@1']['output'] | null;
+      readonly susRespuestas: CodecTypes['pg/text@1']['output'];
+      readonly susPuntaje: Numeric<5, 2>;
+      readonly creadaPor: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    };
+    readonly UsabilidadTareas: {
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly sesionId: CodecTypes['pg/uuid@1']['output'];
+      readonly tarea: Varchar<250>;
+      readonly completada: CodecTypes['pg/bool@1']['output'];
+      readonly errores: CodecTypes['pg/int4@1']['output'];
+      readonly observaciones: CodecTypes['pg/text@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    };
   };
 };
 export type FieldInputTypes = {
@@ -690,6 +722,38 @@ export type FieldInputTypes = {
       readonly completadoAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+    };
+    readonly UsabilidadHallazgos: {
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly sesionId: CodecTypes['pg/uuid@1']['input'];
+      readonly descripcion: CodecTypes['pg/text@1']['input'];
+      readonly pantalla: CodecTypes['sql/varchar@1']['input'] | null;
+      readonly prioridad: CodecTypes['sql/varchar@1']['input'];
+      readonly enBacklog: CodecTypes['pg/bool@1']['input'];
+      readonly resuelto: CodecTypes['pg/bool@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+    };
+    readonly UsabilidadSesiones: {
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly participante: CodecTypes['sql/varchar@1']['input'];
+      readonly perfil: CodecTypes['sql/varchar@1']['input'] | null;
+      readonly fechaSesion: CodecTypes['pg/date-temporal@1']['input'];
+      readonly observaciones: CodecTypes['pg/text@1']['input'] | null;
+      readonly susRespuestas: CodecTypes['pg/text@1']['input'];
+      readonly susPuntaje: CodecTypes['pg/numeric@1']['input'];
+      readonly creadaPor: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+    };
+    readonly UsabilidadTareas: {
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly sesionId: CodecTypes['pg/uuid@1']['input'];
+      readonly tarea: CodecTypes['sql/varchar@1']['input'];
+      readonly completada: CodecTypes['pg/bool@1']['input'];
+      readonly errores: CodecTypes['pg/int4@1']['input'];
+      readonly observaciones: CodecTypes['pg/text@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
   };
 };
@@ -918,6 +982,38 @@ export type StorageColumnTypes = {
       readonly tipo_mantenimiento: Varchar<200>;
       readonly updated_at: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
+    readonly usabilidad_hallazgos: {
+      readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly descripcion: CodecTypes['pg/text@1']['output'];
+      readonly en_backlog: CodecTypes['pg/bool@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly pantalla: Varchar<100> | null;
+      readonly prioridad: Varchar<10>;
+      readonly resuelto: CodecTypes['pg/bool@1']['output'];
+      readonly sesion_id: CodecTypes['pg/uuid@1']['output'];
+      readonly updated_at: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    };
+    readonly usabilidad_sesiones: {
+      readonly creada_por: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly fecha_sesion: CodecTypes['pg/date-temporal@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly observaciones: CodecTypes['pg/text@1']['output'] | null;
+      readonly participante: Varchar<150>;
+      readonly perfil: Varchar<200> | null;
+      readonly sus_puntaje: Numeric<5, 2>;
+      readonly sus_respuestas: CodecTypes['pg/text@1']['output'];
+      readonly updated_at: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    };
+    readonly usabilidad_tareas: {
+      readonly completada: CodecTypes['pg/bool@1']['output'];
+      readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly errores: CodecTypes['pg/int4@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly observaciones: CodecTypes['pg/text@1']['output'] | null;
+      readonly sesion_id: CodecTypes['pg/uuid@1']['output'];
+      readonly tarea: Varchar<250>;
+    };
   };
 };
 export type StorageColumnInputTypes = {
@@ -1145,6 +1241,38 @@ export type StorageColumnInputTypes = {
       readonly tipo_mantenimiento: CodecTypes['sql/varchar@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
+    readonly usabilidad_hallazgos: {
+      readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly descripcion: CodecTypes['pg/text@1']['input'];
+      readonly en_backlog: CodecTypes['pg/bool@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly pantalla: CodecTypes['sql/varchar@1']['input'] | null;
+      readonly prioridad: CodecTypes['sql/varchar@1']['input'];
+      readonly resuelto: CodecTypes['pg/bool@1']['input'];
+      readonly sesion_id: CodecTypes['pg/uuid@1']['input'];
+      readonly updated_at: CodecTypes['pg/timestamptz-temporal@1']['input'];
+    };
+    readonly usabilidad_sesiones: {
+      readonly creada_por: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly fecha_sesion: CodecTypes['pg/date-temporal@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly observaciones: CodecTypes['pg/text@1']['input'] | null;
+      readonly participante: CodecTypes['sql/varchar@1']['input'];
+      readonly perfil: CodecTypes['sql/varchar@1']['input'] | null;
+      readonly sus_puntaje: CodecTypes['pg/numeric@1']['input'];
+      readonly sus_respuestas: CodecTypes['pg/text@1']['input'];
+      readonly updated_at: CodecTypes['pg/timestamptz-temporal@1']['input'];
+    };
+    readonly usabilidad_tareas: {
+      readonly completada: CodecTypes['pg/bool@1']['input'];
+      readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly errores: CodecTypes['pg/int4@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly observaciones: CodecTypes['pg/text@1']['input'] | null;
+      readonly sesion_id: CodecTypes['pg/uuid@1']['input'];
+      readonly tarea: CodecTypes['sql/varchar@1']['input'];
+    };
   };
 };
 
@@ -1252,8 +1380,14 @@ export namespace Models {
     ordenesServicios: public_OrdenesServicio[];
     pagos: public_Pagos[];
     recordatoriosMantenimientos: public_RecordatoriosMantenimiento[];
+    usabilidadSesiones: public_UsabilidadSesiones[];
     readonly [RelationKeys]?:
-      'facturas' | 'notasCreditos' | 'ordenesServicios' | 'pagos' | 'recordatoriosMantenimientos';
+      | 'facturas'
+      | 'notasCreditos'
+      | 'ordenesServicios'
+      | 'pagos'
+      | 'recordatoriosMantenimientos'
+      | 'usabilidadSesiones';
   };
   export type public_OrdenesServicio = {
     id: CodecTypes['pg/uuid@1']['output'];
@@ -1447,6 +1581,46 @@ export namespace Models {
     profiles: public_Profiles | null;
     readonly [RelationKeys]?: 'motocicleta' | 'ordenOrigen' | 'profiles';
   };
+  export type public_UsabilidadSesiones = {
+    id: CodecTypes['pg/uuid@1']['output'];
+    participante: Varchar<150>;
+    perfil: Varchar<200> | null;
+    fechaSesion: CodecTypes['pg/date-temporal@1']['output'];
+    observaciones: CodecTypes['pg/text@1']['output'] | null;
+    susRespuestas: CodecTypes['pg/text@1']['output'];
+    susPuntaje: Numeric<5, 2>;
+    creadaPor: CodecTypes['pg/uuid@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    hallazgos: public_UsabilidadHallazgos[];
+    profiles: public_Profiles | null;
+    tareas: public_UsabilidadTareas[];
+    readonly [RelationKeys]?: 'hallazgos' | 'profiles' | 'tareas';
+  };
+  export type public_UsabilidadTareas = {
+    id: CodecTypes['pg/uuid@1']['output'];
+    sesionId: CodecTypes['pg/uuid@1']['output'];
+    tarea: Varchar<250>;
+    completada: CodecTypes['pg/bool@1']['output'];
+    errores: CodecTypes['pg/int4@1']['output'];
+    observaciones: CodecTypes['pg/text@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    sesion: public_UsabilidadSesiones;
+    readonly [RelationKeys]?: 'sesion';
+  };
+  export type public_UsabilidadHallazgos = {
+    id: CodecTypes['pg/uuid@1']['output'];
+    sesionId: CodecTypes['pg/uuid@1']['output'];
+    descripcion: CodecTypes['pg/text@1']['output'];
+    pantalla: Varchar<100> | null;
+    prioridad: Varchar<10>;
+    enBacklog: CodecTypes['pg/bool@1']['output'];
+    resuelto: CodecTypes['pg/bool@1']['output'];
+    createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    sesion: public_UsabilidadSesiones;
+    readonly [RelationKeys]?: 'sesion';
+  };
 }
 
 export declare const models: {
@@ -1466,6 +1640,9 @@ export declare const models: {
     EnviosDian: Models.public_EnviosDian;
     Pagos: Models.public_Pagos;
     RecordatoriosMantenimiento: Models.public_RecordatoriosMantenimiento;
+    UsabilidadSesiones: Models.public_UsabilidadSesiones;
+    UsabilidadTareas: Models.public_UsabilidadTareas;
+    UsabilidadHallazgos: Models.public_UsabilidadHallazgos;
   };
 };
 
@@ -3359,6 +3536,272 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly usabilidad_hallazgos: {
+              columns: {
+                readonly id: {
+                  readonly nativeType: 'uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                };
+                readonly sesion_id: {
+                  readonly nativeType: 'uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                };
+                readonly descripcion: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly pantalla: {
+                  readonly nativeType: 'character varying';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 100 };
+                };
+                readonly prioridad: {
+                  readonly nativeType: 'character varying';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 10 };
+                };
+                readonly en_backlog: {
+                  readonly nativeType: 'bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                };
+                readonly resuelto: {
+                  readonly nativeType: 'bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                };
+                readonly created_at: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+                readonly updated_at: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+              };
+              primaryKey: {
+                readonly columns: readonly ['id'];
+                readonly name: 'usabilidad_hallazgos_pkey';
+              };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'idx_usabilidad_hallazgos_sesion';
+                  readonly columns: readonly ['sesion_id'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'usabilidad_hallazgos';
+                    readonly columns: readonly ['sesion_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'usabilidad_sesiones';
+                    readonly columns: readonly ['id'];
+                  };
+                  readonly name: 'usabilidad_hallazgos_sesion_id_fkey';
+                },
+              ];
+            };
+            readonly usabilidad_sesiones: {
+              columns: {
+                readonly id: {
+                  readonly nativeType: 'uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                };
+                readonly participante: {
+                  readonly nativeType: 'character varying';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 150 };
+                };
+                readonly perfil: {
+                  readonly nativeType: 'character varying';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 200 };
+                };
+                readonly fecha_sesion: {
+                  readonly nativeType: 'date';
+                  readonly codecId: 'pg/date-temporal@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'CURRENT_DATE';
+                  };
+                };
+                readonly observaciones: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly sus_respuestas: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly sus_puntaje: {
+                  readonly nativeType: 'numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 5; readonly scale: 2 };
+                };
+                readonly creada_por: {
+                  readonly nativeType: 'uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                };
+                readonly created_at: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+                readonly updated_at: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+              };
+              primaryKey: {
+                readonly columns: readonly ['id'];
+                readonly name: 'usabilidad_sesiones_pkey';
+              };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'idx_usabilidad_sesiones_fecha';
+                  readonly columns: readonly ['fecha_sesion'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'usabilidad_sesiones';
+                    readonly columns: readonly ['creada_por'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'profiles';
+                    readonly columns: readonly ['id'];
+                  };
+                  readonly name: 'usabilidad_sesiones_creada_por_fkey';
+                },
+              ];
+            };
+            readonly usabilidad_tareas: {
+              columns: {
+                readonly id: {
+                  readonly nativeType: 'uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                };
+                readonly sesion_id: {
+                  readonly nativeType: 'uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                };
+                readonly tarea: {
+                  readonly nativeType: 'character varying';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 250 };
+                };
+                readonly completada: {
+                  readonly nativeType: 'bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                };
+                readonly errores: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 0>;
+                  };
+                };
+                readonly observaciones: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly created_at: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+              };
+              primaryKey: {
+                readonly columns: readonly ['id'];
+                readonly name: 'usabilidad_tareas_pkey';
+              };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'idx_usabilidad_tareas_sesion';
+                  readonly columns: readonly ['sesion_id'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'usabilidad_tareas';
+                    readonly columns: readonly ['sesion_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'usabilidad_sesiones';
+                    readonly columns: readonly ['id'];
+                  };
+                  readonly name: 'usabilidad_tareas_sesion_id_fkey';
+                },
+              ];
+            };
           };
           readonly valueSet: {
             readonly AmbienteDian: {
@@ -3473,6 +3916,18 @@ type ContractBase = Omit<
     readonly recordatorios_mantenimiento: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'RecordatoriosMantenimiento';
+    };
+    readonly usabilidad_sesiones: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'UsabilidadSesiones';
+    };
+    readonly usabilidad_tareas: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'UsabilidadTareas';
+    };
+    readonly usabilidad_hallazgos: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'UsabilidadHallazgos';
     };
   };
   readonly domain: {
@@ -5461,6 +5916,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['creadoPor'];
                 };
               };
+              readonly usabilidadSesiones: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'UsabilidadSesiones';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['creadaPor'];
+                };
+              };
             };
             readonly storage: {
               readonly table: 'profiles';
@@ -5605,6 +6071,269 @@ type ContractBase = Omit<
                 readonly completadoAt: { readonly column: 'completado_at' };
                 readonly createdAt: { readonly column: 'created_at' };
                 readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly UsabilidadHallazgos: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly sesionId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly descripcion: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly pantalla: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 100 };
+                };
+              };
+              readonly prioridad: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 10 };
+                };
+              };
+              readonly enBacklog: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly resuelto: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly sesion: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'UsabilidadSesiones';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['sesionId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'usabilidad_hallazgos';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly sesionId: { readonly column: 'sesion_id' };
+                readonly descripcion: { readonly column: 'descripcion' };
+                readonly pantalla: { readonly column: 'pantalla' };
+                readonly prioridad: { readonly column: 'prioridad' };
+                readonly enBacklog: { readonly column: 'en_backlog' };
+                readonly resuelto: { readonly column: 'resuelto' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly UsabilidadSesiones: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly participante: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 150 };
+                };
+              };
+              readonly perfil: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 200 };
+                };
+              };
+              readonly fechaSesion: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-temporal@1' };
+              };
+              readonly observaciones: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly susRespuestas: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly susPuntaje: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 5; readonly scale: 2 };
+                };
+              };
+              readonly creadaPor: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly hallazgos: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'UsabilidadHallazgos';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['sesionId'];
+                };
+              };
+              readonly profiles: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Profiles';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['creadaPor'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly tareas: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'UsabilidadTareas';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['sesionId'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'usabilidad_sesiones';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly participante: { readonly column: 'participante' };
+                readonly perfil: { readonly column: 'perfil' };
+                readonly fechaSesion: { readonly column: 'fecha_sesion' };
+                readonly observaciones: { readonly column: 'observaciones' };
+                readonly susRespuestas: { readonly column: 'sus_respuestas' };
+                readonly susPuntaje: { readonly column: 'sus_puntaje' };
+                readonly creadaPor: { readonly column: 'creada_por' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly UsabilidadTareas: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly sesionId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly tarea: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 250 };
+                };
+              };
+              readonly completada: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly errores: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly observaciones: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly sesion: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'UsabilidadSesiones';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['sesionId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'usabilidad_tareas';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly sesionId: { readonly column: 'sesion_id' };
+                readonly tarea: { readonly column: 'tarea' };
+                readonly completada: { readonly column: 'completada' };
+                readonly errores: { readonly column: 'errores' };
+                readonly observaciones: { readonly column: 'observaciones' };
+                readonly createdAt: { readonly column: 'created_at' };
               };
             };
           };

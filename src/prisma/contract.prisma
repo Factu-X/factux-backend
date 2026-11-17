@@ -137,6 +137,7 @@ namespace public {
     ordenesServicios            OrdenesServicio[]
     pagos                       Pagos[]
     recordatoriosMantenimientos RecordatoriosMantenimiento[]
+    usabilidadSesiones          UsabilidadSesiones[]
 
     @@rls
     @@map("profiles")
@@ -403,6 +404,61 @@ namespace public {
     @@check(expression: "((fecha_objetivo IS NOT NULL) OR (kilometraje_objetivo IS NOT NULL))", map: "chk_recordatorio_objetivo")
     @@rls
     @@map("recordatorios_mantenimiento")
+  }
+
+  model UsabilidadSesiones {
+    id            Uuid                  @id(map: "usabilidad_sesiones_pkey") @default(dbgenerated("gen_random_uuid()"))
+    participante  VarChar(150)
+    perfil        VarChar(200)?
+    fechaSesion   Date                  @default(dbgenerated("CURRENT_DATE")) @map("fecha_sesion")
+    observaciones String?
+    susRespuestas String                @map("sus_respuestas")
+    susPuntaje    Numeric(5, 2)         @map("sus_puntaje")
+    creadaPor     Uuid?                 @map("creada_por")
+    createdAt     Timestamptz           @default(now()) @map("created_at")
+    updatedAt     Timestamptz           @default(now()) @map("updated_at")
+    tareas        UsabilidadTareas[]
+    hallazgos     UsabilidadHallazgos[]
+    profiles      Profiles?             @relation(fields: [creadaPor], references: [id], onDelete: SetNull, map: "usabilidad_sesiones_creada_por_fkey", index: false)
+
+    @@index([fechaSesion], map: "idx_usabilidad_sesiones_fecha")
+    @@check(expression: "((sus_puntaje >= (0)::numeric) AND (sus_puntaje <= (100)::numeric))", map: "chk_usabilidad_sus_puntaje")
+    @@rls
+    @@map("usabilidad_sesiones")
+  }
+
+  model UsabilidadTareas {
+    id            Uuid               @id(map: "usabilidad_tareas_pkey") @default(dbgenerated("gen_random_uuid()"))
+    sesionId      Uuid               @map("sesion_id")
+    tarea         VarChar(250)
+    completada    Boolean            @default(false)
+    errores       Int                @default(0)
+    observaciones String?
+    createdAt     Timestamptz        @default(now()) @map("created_at")
+    sesion        UsabilidadSesiones @relation(fields: [sesionId], references: [id], onDelete: Cascade, map: "usabilidad_tareas_sesion_id_fkey")
+
+    @@index([sesionId], map: "idx_usabilidad_tareas_sesion")
+    @@check(expression: "(errores >= 0)", map: "chk_usabilidad_tarea_errores")
+    @@rls
+    @@map("usabilidad_tareas")
+  }
+
+  model UsabilidadHallazgos {
+    id          Uuid               @id(map: "usabilidad_hallazgos_pkey") @default(dbgenerated("gen_random_uuid()"))
+    sesionId    Uuid               @map("sesion_id")
+    descripcion String
+    pantalla    VarChar(100)?
+    prioridad   VarChar(10)
+    enBacklog   Boolean            @default(false) @map("en_backlog")
+    resuelto    Boolean            @default(false)
+    createdAt   Timestamptz        @default(now()) @map("created_at")
+    updatedAt   Timestamptz        @default(now()) @map("updated_at")
+    sesion      UsabilidadSesiones @relation(fields: [sesionId], references: [id], onDelete: Cascade, map: "usabilidad_hallazgos_sesion_id_fkey")
+
+    @@index([sesionId], map: "idx_usabilidad_hallazgos_sesion")
+    @@check(expression: "((prioridad)::text = ANY ((ARRAY['CRITICA'::character varying, 'ALTA'::character varying, 'MEDIA'::character varying, 'BAJA'::character varying])::text[]))", map: "chk_usabilidad_hallazgo_prioridad")
+    @@rls
+    @@map("usabilidad_hallazgos")
   }
 
   native_enum AmbienteDian {
