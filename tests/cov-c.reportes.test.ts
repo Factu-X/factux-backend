@@ -2,7 +2,7 @@ import "temporal-polyfill/global";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const T = vi.hoisted(() => {
-  const TERMINALES = new Set(["all"]);
+  const TERMINALES = new Set(["all", "aggregate"]);
   const deep: unknown = new Proxy(function () {}, { get: (_t, p) => (p === "then" ? undefined : deep), apply: () => deep });
   const modelos: Record<string, ReturnType<typeof vi.fn>> = {};
   const modelo = (nombre: string) => {
@@ -19,7 +19,7 @@ const T = vi.hoisted(() => {
     });
     return cadena;
   };
-  const db = { orm: { public: Object.fromEntries(["Facturas", "NotasCredito", "Pagos"].map((n) => [n, modelo(n)])) } };
+  const db = { orm: { public: Object.fromEntries(["Facturas", "NotasCredito", "Pagos", "OrdenesServicio"].map((n) => [n, modelo(n)])) } };
   return { db, modelos, getCartera: vi.fn() };
 });
 
@@ -44,6 +44,7 @@ beforeEach(() => {
   T.modelos["Facturas"]!.mockResolvedValue([]);
   T.modelos["NotasCredito"]!.mockResolvedValue([]);
   T.modelos["Pagos"]!.mockResolvedValue([]);
+  T.modelos["OrdenesServicio"]!.mockResolvedValue({ total: 0 });
 });
 
 describe("reportes: rango", () => {
@@ -72,7 +73,7 @@ describe("reportes: getReporteFacturacion", () => {
   it("sin datos devuelve ceros, ticket promedio 0 y una serie con todos los dias", async () => {
     const r = await getReporteFacturacion({ desde: "2026-11-01", hasta: "2026-11-03" });
     expect(r.totales).toEqual({
-      facturas: 0, facturado: "0.00", subtotal: "0.00", iva: "0.00", notasCredito: "0.00", neto: "0.00", recaudado: "0.00", ticketPromedio: "0.00",
+      facturas: 0, facturado: "0.00", subtotal: "0.00", iva: "0.00", notasCredito: "0.00", neto: "0.00", recaudado: "0.00", ordenesFinalizadas: 0, ticketPromedio: "0.00",
     });
     expect(r.serie).toEqual([
       { fecha: "2026-11-01", facturas: 0, total: "0.00" },
@@ -95,8 +96,10 @@ describe("reportes: getReporteFacturacion", () => {
     T.modelos["Pagos"]!.mockResolvedValue([
       { monto: "40.00", metodoPago: "EFECTIVO" }, { monto: "10.50", metodoPago: "EFECTIVO" }, { monto: "5.25", metodoPago: "TARJETA" },
     ]);
+    T.modelos["OrdenesServicio"]!.mockResolvedValue({ total: 4 });
     const r = await getReporteFacturacion({ desde: "2026-11-01", hasta: "2026-11-03" });
     expect(r.totales).toMatchObject({
+      ordenesFinalizadas: 4,
       facturas: 3, facturado: "100.01", subtotal: "92.03", iva: "7.98", notasCredito: "10.11", neto: "89.90", recaudado: "55.75",
       ticketPromedio: "33.33",
     });
