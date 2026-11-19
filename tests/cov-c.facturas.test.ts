@@ -291,6 +291,13 @@ describe("facturas: totales e IVA", () => {
     ]);
   });
 
+  it("factura una orden con repuesto de tercero (sin item de catalogo) y conserva el proveedor", async () => {
+    preparar({ lineas: [linea({ id: "d9", codigoItem: "TER", nombreItem: "Bujia", itemCatalogoId: null, proveedorTercero: "Taller Pepe" })] });
+    await svc.createFacturaFromOrden(input);
+    const filas = m("DetallesFactura")["createAll"]!.mock.calls[0]![0];
+    expect(filas).toEqual([expect.objectContaining({ detalleOrdenId: "d9", codigoItem: "TER", descripcion: "Bujia", proveedorTercero: "Taller Pepe" })]);
+  });
+
   it("en credito guarda la fecha de vencimiento y sube el XML al bucket", async () => {
     preparar();
     await svc.createFacturaFromOrden({ ordenId: ORDEN, formaPago: "CREDITO", fechaVencimiento: "2999-01-31" });

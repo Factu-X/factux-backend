@@ -27,7 +27,7 @@ vi.mock("@prisma/orm-postgres/orm-client", () => ({ and: (...a: unknown[]) => a 
 vi.mock("../src/prisma/db.js", () => ({ db: T.db }));
 vi.mock("../src/modules/cartera/cartera.service.js", () => ({ getCartera: T.getCartera }));
 
-const { getReporteFacturacion, rangoDelReporte } = await import("../src/modules/reportes/reportes.service.js");
+const { getReporteFacturacion, listPagos, rangoDelReporte } = await import("../src/modules/reportes/reportes.service.js");
 
 beforeAll(() => vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-11-16T17:00:00Z") }));
 afterAll(() => vi.useRealTimers());
@@ -158,5 +158,37 @@ describe("reportes: getReporteFacturacion", () => {
   it("propaga el 400 del rango invalido sin consultar la base", async () => {
     await expect(getReporteFacturacion({ desde: "2026-11-10", hasta: "2026-11-01" })).rejects.toMatchObject({ statusCode: 400 });
     expect(T.modelos["Facturas"]).not.toHaveBeenCalled();
+  });
+});
+
+describe("reportes: repuestos de tercero y lista de pagos", () => {
+  it("el top de items no mezcla repuestos de tercero distintos", async () => {
+    const ter = (descripcion: string, total: string) => ({ codigoItem: "TER", descripcion, cantidad: "1.00", total });
+    T.modelos["Facturas"]!.mockResolvedValue([
+      fact("f1", "1.00", "2026-11-05T15:00:00Z", { detallesFacturas: [ter("Bujia", "10.00"), ter("Bujia", "5.00"), ter("Llanta", "30.00")] }),
+    ]);
+    const r = await getReporteFacturacion({ desde: "2026-11-05", hasta: "2026-11-05" });
+    expect(r.topItems).toEqual([
+      { codigo: "TER", descripcion: "Llanta", cantidad: "1.00", total: "30.00" },
+      { codigo: "TER", descripcion: "Bujia", cantidad: "2.00", total: "15.00" },
+    ]);
+  });
+
+  const pago = (id: string, monto: string, metodoPago: string, extra: Record<string, unknown> = {}) => ({
+    id, monto, metodoPago, fechaPago: instante("2026-11-05T17:00:00Z"), referencia: null, observaciones: null, facturaId: "f1",
+    factura: { numero: "FE-1", clienteId: "c1", cliente: { nombreRazonSocial: "Ana" } }, ...extra,
+  });
+
+  it("lista pagos con totales por metodo y filtro por metodo", async () => {
+    T.modelos["Pagos"]!.mockResolvedValue([pago("p1", "100.00", "EFECTIVO"), pago("p2", "50.50", "TARJETA"), pago("p3", "20.00", "EFECTIVO", { factura: null })]);
+    const todos = await listPagos({ desde: "2026-11-05", hasta: "2026-11-05" });
+    expect(todos).toMatchObject({ desde: "2026-11-05", hasta: "2026-11-05" });
+    expect(todos.pagos[0]).toMatchObject({ id: "p1", factura: { id: "f1", numero: "FE-1" }, cliente: { id: "c1", nombre: "Ana" } });
+    expect(todos.pagos[2]).toMatchObject({ factura: { numero: "" }, cliente: { id: "", nombre: "" } });
+    expect(todos.totales).toEqual({ total: "170.50", porMetodo: { EFECTIVO: "120.00", TRANSFERENCIA: "0.00", TARJETA: "50.50", OTRO: "0.00" } });
+
+    const efectivo = await listPagos({ metodo: "EFECTIVO" });
+    expect(efectivo.pagos.map((p) => p.id)).toEqual(["p1", "p3"]);
+    expect(efectivo.totales.total).toBe("120.00");
   });
 });

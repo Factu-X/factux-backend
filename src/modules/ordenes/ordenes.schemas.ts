@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { parseDecimalToScale } from "../../shared/decimal.js";
+import { TARIFA_INVALIDA, tarifaValida, tratamientoIvaSchema } from "../catalogo/catalogo.schemas.js";
 
 export const estadoOrdenSchema = z.enum(["ABIERTA", "EN_PROCESO", "FINALIZADA", "CANCELADA"]);
 
@@ -45,13 +46,38 @@ export const ordenesQuerySchema = z.object({
   motocicletaId: z.uuid().optional(),
 });
 
-export const createOrdenDetalleSchema = z
+const detalleCatalogoSchema = z
   .object({
     itemCatalogoId: z.uuid(),
     cantidad: cantidadSchema.default(1),
     precioAplicado: decimalInputSchema.optional(),
   })
   .strict();
+
+// Repuesto comprado a otro taller o distribuidor: no existe en el catalogo.
+const terceroSchema = z
+  .object({
+    descripcion: z.string().trim().min(1).max(200),
+    proveedor: z.string().trim().min(1).max(150),
+    precio: decimalInputSchema,
+    tratamientoIva: tratamientoIvaSchema.default("GRAVADO"),
+    tarifaIva: z.number().min(0).max(100).default(19),
+  })
+  .strict()
+  .refine(
+    (value) => value.tratamientoIva === "GRAVADO" || value.tarifaIva === 0,
+    "Los items EXENTO o EXCLUIDO deben tener tarifaIva 0",
+  )
+  .refine(tarifaValida, TARIFA_INVALIDA);
+
+const detalleTerceroSchema = z
+  .object({
+    tercero: terceroSchema,
+    cantidad: cantidadSchema.default(1),
+  })
+  .strict();
+
+export const createOrdenDetalleSchema = z.union([detalleCatalogoSchema, detalleTerceroSchema]);
 
 export const updateOrdenDetalleSchema = z
   .object({

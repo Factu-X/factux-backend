@@ -373,3 +373,27 @@ describe("ordenes: controlador", () => {
     expect(del.res.json).toHaveBeenCalledWith({ data: orden() });
   });
 });
+
+describe("ordenes: repuesto de tercero", () => {
+  const tercero = { descripcion: "Bujia NGK", proveedor: "Taller Pepe", precio: 100, tratamientoIva: "GRAVADO", tarifaIva: 19 };
+
+  beforeEach(() => {
+    col("OrdenesServicio")["first"].mockResolvedValue(orden());
+    col("OrdenesServicio")["update"].mockResolvedValue(orden({ total: "1.00" }));
+  });
+
+  it("crea la linea sin item de catalogo, con codigo TER y totales calculados", async () => {
+    await S.addDetalleOrden(ID, { tercero, cantidad: 2 } as any);
+    expect(col("ItemsCatalogo")["first"]).not.toHaveBeenCalled();
+    expect(col("DetallesOrden")["create"]).toHaveBeenCalledWith(expect.objectContaining({
+      ordenId: ID, itemCatalogoId: null, proveedorTercero: "Taller Pepe", codigoItem: "TER", nombreItem: "Bujia NGK",
+      tipoItem: "REPUESTO", cantidad: "2.00", precioUnitario: "100.00", subtotal: "200.00", impuesto: "38.00", total: "238.00",
+    }));
+  });
+
+  it("actualiza cantidad y precio de una linea de tercero reutilizando su IVA", async () => {
+    col("DetallesOrden")["first"].mockResolvedValue(detalleRow({ itemCatalogoId: null, proveedorTercero: "Taller Pepe" }));
+    await S.updateDetalleOrden(ID, DET, { cantidad: 1, precioAplicado: "50" } as any);
+    expect(col("DetallesOrden")["update"]).toHaveBeenCalledWith(expect.objectContaining({ precioUnitario: "50.00", total: "59.50" }));
+  });
+});

@@ -802,6 +802,16 @@
                   }
                 }
               },
+              "proveedorTercero": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 150
+                  }
+                }
+              },
               "subtotal": {
                 "nullable": false,
                 "type": {
@@ -913,6 +923,9 @@
                 },
                 "precioUnitario": {
                   "column": "precio_unitario"
+                },
+                "proveedorTercero": {
+                  "column": "proveedor_tercero"
                 },
                 "subtotal": {
                   "column": "subtotal"
@@ -1158,7 +1171,7 @@
                 }
               },
               "itemCatalogoId": {
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/uuid@1",
                   "kind": "scalar"
@@ -1189,6 +1202,16 @@
                   "typeParams": {
                     "precision": 14,
                     "scale": 2
+                  }
+                }
+              },
+              "proveedorTercero": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 150
                   }
                 }
               },
@@ -1264,7 +1287,7 @@
               },
               "itemCatalogo": {
                 "cardinality": "N:1",
-                "nullable": false,
+                "nullable": true,
                 "on": {
                   "localFields": [
                     "itemCatalogoId"
@@ -1323,6 +1346,9 @@
                 },
                 "precioUnitario": {
                   "column": "precio_unitario"
+                },
+                "proveedorTercero": {
+                  "column": "proveedor_tercero"
                 },
                 "subtotal": {
                   "column": "subtotal"
@@ -4401,6 +4427,14 @@
                     "scale": 2
                   }
                 },
+                "proveedor_tercero": {
+                  "codecId": "sql/varchar@1",
+                  "nativeType": "character varying",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 150
+                  }
+                },
                 "subtotal": {
                   "codecId": "pg/numeric@1",
                   "nativeType": "numeric",
@@ -4677,6 +4711,10 @@
                   "name": "chk_detalle_orden_iva"
                 },
                 {
+                  "expression": "((item_catalogo_id IS NOT NULL) OR (proveedor_tercero IS NOT NULL))",
+                  "name": "chk_detalle_orden_origen"
+                },
+                {
                   "expression": "(precio_unitario >= (0)::numeric)",
                   "name": "chk_detalle_orden_precio"
                 },
@@ -4745,7 +4783,7 @@
                 "item_catalogo_id": {
                   "codecId": "pg/uuid@1",
                   "nativeType": "uuid",
-                  "nullable": false
+                  "nullable": true
                 },
                 "nombre_item": {
                   "codecId": "sql/varchar@1",
@@ -4767,6 +4805,14 @@
                   "typeParams": {
                     "precision": 14,
                     "scale": 2
+                  }
+                },
+                "proveedor_tercero": {
+                  "codecId": "sql/varchar@1",
+                  "nativeType": "character varying",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 150
                   }
                 },
                 "subtotal": {
@@ -6986,7 +7032,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "a4896dd5955d7f40d9fc8fc3b1d69ef2e8c161fc3b8c7c90121b57f28dc73922"
+    "storageHash": "a11603c26fa77f8aae330eb18f06aab1929739b4219cd11bde80fdf7faaa1f8c"
   },
   "capabilities": {
     "postgres": {

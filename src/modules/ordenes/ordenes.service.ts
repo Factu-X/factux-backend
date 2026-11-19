@@ -96,7 +96,36 @@ const getDetalleByIdWithClient = async (ordenId: string, detalleId: string, clie
   return detalle;
 };
 
+const buildDetalleTercero = (input: Extract<CreateOrdenDetalleInput, { tercero: unknown }>) => {
+  const { tercero } = input;
+  const totals = calculateDetalle({
+    cantidad: input.cantidad,
+    precioUnitario: tercero.precio,
+    tratamientoIva: tercero.tratamientoIva,
+    tarifaIva: tercero.tarifaIva,
+  });
+
+  return {
+    itemCatalogoId: null,
+    proveedorTercero: varchar<150>(tercero.proveedor),
+    codigoItem: varchar<50>("TER"),
+    nombreItem: varchar<200>(tercero.descripcion),
+    tipoItem: "REPUESTO" as const,
+    cantidad: numeric<10, 2>(totals.cantidad),
+    precioUnitario: numeric<14, 2>(totals.precioUnitario),
+    tratamientoIva: tercero.tratamientoIva,
+    tarifaIva: numeric<5, 2>(totals.tarifaIva),
+    subtotal: numeric<14, 2>(totals.subtotal),
+    impuesto: numeric<14, 2>(totals.impuesto),
+    total: numeric<14, 2>(totals.total),
+  };
+};
+
 const buildDetalleSnapshot = async (input: CreateOrdenDetalleInput, client: DbContext = db) => {
+  if ("tercero" in input) {
+    return buildDetalleTercero(input);
+  }
+
   const item = await client.orm.public.ItemsCatalogo.first({ id: input.itemCatalogoId });
 
   if (!item) {

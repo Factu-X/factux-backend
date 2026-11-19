@@ -27,10 +27,11 @@ const T = vi.hoisted(() => {
   const db: Record<string, unknown> = {};
   db["orm"] = { public: Object.fromEntries(["Facturas", "NotasCredito", "Pagos"].map((n) => [n, modelo(n)])) };
   db["transaction"] = (fn: (tx: unknown) => unknown) => fn(db);
-  return { db, modelos, getFacturaById: vi.fn() };
+  return { db, modelos, getFacturaById: vi.fn(), listPagos: vi.fn() };
 });
 
 vi.mock("../src/prisma/db.js", () => ({ db: T.db }));
+vi.mock("../src/modules/reportes/reportes.service.js", () => ({ listPagos: T.listPagos }));
 vi.mock("../src/modules/facturas/facturas.service.js", () => ({ getFacturaById: T.getFacturaById }));
 
 const svc = await import("../src/modules/cartera/cartera.service.js");
@@ -234,5 +235,14 @@ describe("cartera: controlador", () => {
     m("NotasCredito")["all"]!.mockResolvedValue([]);
     const { next } = await llamar(ctl.registrarPagoController, { params: { id: FACT }, body: { monto: 100.01, metodoPago: "EFECTIVO" } });
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
+  });
+
+  it("lista pagos validando la consulta", async () => {
+    T.listPagos.mockResolvedValue({ pagos: [] });
+    const x = await llamar(ctl.listPagosController, { query: { metodo: "TARJETA", desde: "2026-11-01" } });
+    expect(T.listPagos).toHaveBeenCalledWith({ metodo: "TARJETA", desde: "2026-11-01" });
+    expect(x.r["json"]).toHaveBeenCalledWith({ data: { pagos: [] } });
+    const mala = await llamar(ctl.listPagosController, { query: { metodo: "CHEQUE" } });
+    expect(mala.next).toHaveBeenCalled();
   });
 });

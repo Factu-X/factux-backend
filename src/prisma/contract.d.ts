@@ -34,7 +34,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'a4896dd5955d7f40d9fc8fc3b1d69ef2e8c161fc3b8c7c90121b57f28dc73922'>;
+  StorageHashBase<'a11603c26fa77f8aae330eb18f06aab1929739b4219cd11bde80fdf7faaa1f8c'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -297,6 +297,7 @@ export type FieldOutputTypes = {
       readonly facturaId: CodecTypes['pg/uuid@1']['output'];
       readonly detalleOrdenId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly codigoItem: Varchar<50> | null;
+      readonly proveedorTercero: Varchar<150> | null;
       readonly descripcion: Varchar<250>;
       readonly cantidad: Numeric<10, 2>;
       readonly precioUnitario: Numeric<14, 2>;
@@ -322,7 +323,8 @@ export type FieldOutputTypes = {
     readonly DetallesOrden: {
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly ordenId: CodecTypes['pg/uuid@1']['output'];
-      readonly itemCatalogoId: CodecTypes['pg/uuid@1']['output'];
+      readonly itemCatalogoId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly proveedorTercero: Varchar<150> | null;
       readonly codigoItem: Varchar<50>;
       readonly nombreItem: Varchar<200>;
       readonly tipoItem: 'SERVICIO' | 'REPUESTO';
@@ -556,6 +558,7 @@ export type FieldInputTypes = {
       readonly facturaId: CodecTypes['pg/uuid@1']['input'];
       readonly detalleOrdenId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly codigoItem: CodecTypes['sql/varchar@1']['input'] | null;
+      readonly proveedorTercero: CodecTypes['sql/varchar@1']['input'] | null;
       readonly descripcion: CodecTypes['sql/varchar@1']['input'];
       readonly cantidad: CodecTypes['pg/numeric@1']['input'];
       readonly precioUnitario: CodecTypes['pg/numeric@1']['input'];
@@ -581,7 +584,8 @@ export type FieldInputTypes = {
     readonly DetallesOrden: {
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly ordenId: CodecTypes['pg/uuid@1']['input'];
-      readonly itemCatalogoId: CodecTypes['pg/uuid@1']['input'];
+      readonly itemCatalogoId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly proveedorTercero: CodecTypes['sql/varchar@1']['input'] | null;
       readonly codigoItem: CodecTypes['sql/varchar@1']['input'];
       readonly nombreItem: CodecTypes['sql/varchar@1']['input'];
       readonly tipoItem: 'SERVICIO' | 'REPUESTO';
@@ -820,6 +824,7 @@ export type StorageColumnTypes = {
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly impuesto: Numeric<14, 2>;
       readonly precio_unitario: Numeric<14, 2>;
+      readonly proveedor_tercero: Varchar<150> | null;
       readonly subtotal: Numeric<14, 2>;
       readonly tarifa_iva: Numeric<5, 2>;
       readonly total: Numeric<14, 2>;
@@ -843,10 +848,11 @@ export type StorageColumnTypes = {
       readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly impuesto: Numeric<14, 2>;
-      readonly item_catalogo_id: CodecTypes['pg/uuid@1']['output'];
+      readonly item_catalogo_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly nombre_item: Varchar<200>;
       readonly orden_id: CodecTypes['pg/uuid@1']['output'];
       readonly precio_unitario: Numeric<14, 2>;
+      readonly proveedor_tercero: Varchar<150> | null;
       readonly subtotal: Numeric<14, 2>;
       readonly tarifa_iva: Numeric<5, 2>;
       readonly tipo_item: 'SERVICIO' | 'REPUESTO';
@@ -1079,6 +1085,7 @@ export type StorageColumnInputTypes = {
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly impuesto: CodecTypes['pg/numeric@1']['input'];
       readonly precio_unitario: CodecTypes['pg/numeric@1']['input'];
+      readonly proveedor_tercero: CodecTypes['sql/varchar@1']['input'] | null;
       readonly subtotal: CodecTypes['pg/numeric@1']['input'];
       readonly tarifa_iva: CodecTypes['pg/numeric@1']['input'];
       readonly total: CodecTypes['pg/numeric@1']['input'];
@@ -1102,10 +1109,11 @@ export type StorageColumnInputTypes = {
       readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly impuesto: CodecTypes['pg/numeric@1']['input'];
-      readonly item_catalogo_id: CodecTypes['pg/uuid@1']['input'];
+      readonly item_catalogo_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly nombre_item: CodecTypes['sql/varchar@1']['input'];
       readonly orden_id: CodecTypes['pg/uuid@1']['input'];
       readonly precio_unitario: CodecTypes['pg/numeric@1']['input'];
+      readonly proveedor_tercero: CodecTypes['sql/varchar@1']['input'] | null;
       readonly subtotal: CodecTypes['pg/numeric@1']['input'];
       readonly tarifa_iva: CodecTypes['pg/numeric@1']['input'];
       readonly tipo_item: 'SERVICIO' | 'REPUESTO';
@@ -1423,7 +1431,8 @@ export namespace Models {
   export type public_DetallesOrden = {
     id: CodecTypes['pg/uuid@1']['output'];
     ordenId: CodecTypes['pg/uuid@1']['output'];
-    itemCatalogoId: CodecTypes['pg/uuid@1']['output'];
+    itemCatalogoId: CodecTypes['pg/uuid@1']['output'] | null;
+    proveedorTercero: Varchar<150> | null;
     codigoItem: Varchar<50>;
     nombreItem: Varchar<200>;
     tipoItem: 'SERVICIO' | 'REPUESTO';
@@ -1436,7 +1445,7 @@ export namespace Models {
     total: Numeric<14, 2>;
     createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     detallesFacturas: public_DetallesFactura[];
-    itemCatalogo: public_ItemsCatalogo;
+    itemCatalogo: public_ItemsCatalogo | null;
     orden: public_OrdenesServicio;
     readonly [RelationKeys]?: 'detallesFacturas' | 'itemCatalogo' | 'orden';
   };
@@ -1481,6 +1490,7 @@ export namespace Models {
     facturaId: CodecTypes['pg/uuid@1']['output'];
     detalleOrdenId: CodecTypes['pg/uuid@1']['output'] | null;
     codigoItem: Varchar<50> | null;
+    proveedorTercero: Varchar<150> | null;
     descripcion: Varchar<250>;
     cantidad: Numeric<10, 2>;
     precioUnitario: Numeric<14, 2>;
@@ -2038,6 +2048,12 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly typeParams: { readonly length: 50 };
                 };
+                readonly proveedor_tercero: {
+                  readonly nativeType: 'character varying';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 150 };
+                };
                 readonly descripcion: {
                   readonly nativeType: 'character varying';
                   readonly codecId: 'sql/varchar@1';
@@ -2266,7 +2282,13 @@ type ContractBase = Omit<
                 readonly item_catalogo_id: {
                   readonly nativeType: 'uuid';
                   readonly codecId: 'pg/uuid@1';
-                  readonly nullable: false;
+                  readonly nullable: true;
+                };
+                readonly proveedor_tercero: {
+                  readonly nativeType: 'character varying';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 150 };
                 };
                 readonly codigo_item: {
                   readonly nativeType: 'character varying';
@@ -4394,6 +4416,14 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly length: 50 };
                 };
               };
+              readonly proveedorTercero: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 150 };
+                };
+              };
               readonly descripcion: {
                 readonly nullable: false;
                 readonly type: {
@@ -4503,6 +4533,7 @@ type ContractBase = Omit<
                 readonly facturaId: { readonly column: 'factura_id' };
                 readonly detalleOrdenId: { readonly column: 'detalle_orden_id' };
                 readonly codigoItem: { readonly column: 'codigo_item' };
+                readonly proveedorTercero: { readonly column: 'proveedor_tercero' };
                 readonly descripcion: { readonly column: 'descripcion' };
                 readonly cantidad: { readonly column: 'cantidad' };
                 readonly precioUnitario: { readonly column: 'precio_unitario' };
@@ -4647,8 +4678,16 @@ type ContractBase = Omit<
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
               readonly itemCatalogoId: {
-                readonly nullable: false;
+                readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly proveedorTercero: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 150 };
+                };
               };
               readonly codigoItem: {
                 readonly nullable: false;
@@ -4756,7 +4795,7 @@ type ContractBase = Omit<
                   readonly model: 'ItemsCatalogo';
                 };
                 readonly cardinality: 'N:1';
-                readonly nullable: false;
+                readonly nullable: true;
                 readonly on: {
                   readonly localFields: readonly ['itemCatalogoId'];
                   readonly targetFields: readonly ['id'];
@@ -4782,6 +4821,7 @@ type ContractBase = Omit<
                 readonly id: { readonly column: 'id' };
                 readonly ordenId: { readonly column: 'orden_id' };
                 readonly itemCatalogoId: { readonly column: 'item_catalogo_id' };
+                readonly proveedorTercero: { readonly column: 'proveedor_tercero' };
                 readonly codigoItem: { readonly column: 'codigo_item' };
                 readonly nombreItem: { readonly column: 'nombre_item' };
                 readonly tipoItem: { readonly column: 'tipo_item' };

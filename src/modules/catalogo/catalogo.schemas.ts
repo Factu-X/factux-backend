@@ -6,9 +6,9 @@ export const tratamientoIvaSchema = z.enum(["GRAVADO", "EXENTO", "EXCLUIDO"]);
 // Tarifas de IVA vigentes (E.T. art. 468 general 19%, arts. 468-1 y 468-3 diferencial 5%).
 // Exentos y excluidos van en 0%: el exento se reporta a la DIAN con tarifa 0, el excluido no causa IVA.
 export const TARIFAS_IVA_GRAVADO = [19, 5];
-const TARIFA_INVALIDA = "Un item GRAVADO solo admite tarifa de IVA 19% o 5%";
+export const TARIFA_INVALIDA = "Un item GRAVADO solo admite tarifa de IVA 19% o 5%";
 
-const tarifaValida = (value: { tratamientoIva?: string; tarifaIva?: number }) =>
+export const tarifaValida = (value: { tratamientoIva?: string; tarifaIva?: number }) =>
   value.tarifaIva === undefined ||
   value.tratamientoIva !== "GRAVADO" ||
   TARIFAS_IVA_GRAVADO.includes(value.tarifaIva);

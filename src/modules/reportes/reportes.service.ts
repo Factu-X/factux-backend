@@ -4,6 +4,7 @@ import { db } from "../../prisma/db.js";
 import { badRequest } from "../../shared/http-error.js";
 import { centavos, pesos } from "../cartera/cartera.rules.js";
 import { getCartera } from "../cartera/cartera.service.js";
+import type { PagosQuery } from "../cartera/cartera.schemas.js";
 import type { ReporteFacturacionQuery } from "./reportes.schemas.js";
 
 const ZONA = "America/Bogota";
@@ -68,7 +69,7 @@ export const getReporteFacturacion = async (query: ReporteFacturacionQuery) => {
   }
 
   const lineas = facturas.flatMap((f) => f.detallesFacturas);
-  const topItems = [...agrupar(lineas, (l) => l.codigoItem ?? l.descripcion).values()]
+  const topItems = [...agrupar(lineas, (l) => (l.codigoItem === "TER" ? `TER|${l.descripcion}` : (l.codigoItem ?? l.descripcion))).values()]
     .map((grupo) => ({
       codigo: grupo[0]!.codigoItem,
       descripcion: grupo[0]!.descripcion,
@@ -117,5 +118,39 @@ export const getReporteFacturacion = async (query: ReporteFacturacionQuery) => {
     topClientes,
     // La cartera es una foto de hoy, no depende del rango.
     cartera: cartera.resumen,
+  };
+};
+
+// Pagos recibidos en el rango (por defecto el mes en curso), del mas reciente al mas antiguo.
+export const listPagos = async (query: PagosQuery) => {
+  const { desde, hasta, inicio, fin } = rangoDelReporte(query);
+
+  const pagos = await db.orm.public.Pagos
+    .where((p) => and(p.fechaPago.gte(inicio), p.fechaPago.lt(fin)))
+    .include("factura", (f) => f.include("cliente", (c) => c.select("id", "nombreRazonSocial")))
+    .orderBy((p) => p.fechaPago.desc())
+    .all();
+
+  const filtrados = query.metodo ? pagos.filter((p) => p.metodoPago === query.metodo) : pagos;
+  const porMetodo: Record<string, bigint> = { EFECTIVO: 0n, TRANSFERENCIA: 0n, TARJETA: 0n, OTRO: 0n };
+  for (const p of filtrados) porMetodo[p.metodoPago] = (porMetodo[p.metodoPago] ?? 0n) + centavos(p.monto);
+
+  return {
+    desde: desde.toString(),
+    hasta: hasta.toString(),
+    pagos: filtrados.map((p) => ({
+      id: p.id,
+      fechaPago: p.fechaPago,
+      monto: p.monto,
+      metodoPago: p.metodoPago,
+      referencia: p.referencia,
+      observaciones: p.observaciones,
+      factura: { id: p.facturaId, numero: p.factura?.numero ?? "" },
+      cliente: { id: p.factura?.clienteId ?? "", nombre: p.factura?.cliente?.nombreRazonSocial ?? "" },
+    })),
+    totales: {
+      total: pesos(Object.values(porMetodo).reduce((t, v) => t + v, 0n)),
+      porMetodo: Object.fromEntries(Object.entries(porMetodo).map(([m, v]) => [m, pesos(v)])),
+    },
   };
 };

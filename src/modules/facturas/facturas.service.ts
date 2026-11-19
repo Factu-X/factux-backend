@@ -259,6 +259,7 @@ export const createFacturaFromOrden = async (input: CreateFacturaInput, creadaPo
           facturaId: factura.id,
           detalleOrdenId: detalle.id,
           codigoItem: nullableVarchar<50>(detalle.codigoItem),
+          proveedorTercero: detalle.proveedorTercero,
           descripcion: varchar<250>(detalle.nombreItem),
           cantidad: detalle.cantidad,
           precioUnitario: detalle.precioUnitario,

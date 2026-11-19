@@ -182,7 +182,8 @@ namespace public {
   model DetallesOrden {
     id               Uuid                      @id(map: "detalles_orden_pkey") @default(dbgenerated("gen_random_uuid()"))
     ordenId          Uuid                      @map("orden_id")
-    itemCatalogoId   Uuid                      @map("item_catalogo_id")
+    itemCatalogoId   Uuid?                     @map("item_catalogo_id")
+    proveedorTercero VarChar(150)?             @map("proveedor_tercero")
     codigoItem       VarChar(50)               @map("codigo_item")
     nombreItem       VarChar(200)              @map("nombre_item")
     tipoItem         pg.enum(TipoItemCatalogo) @map("tipo_item")
@@ -195,11 +196,12 @@ namespace public {
     total            Numeric(14, 2)
     createdAt        Timestamptz               @default(now()) @map("created_at")
     detallesFacturas DetallesFactura[]
-    itemCatalogo     ItemsCatalogo             @relation(fields: [itemCatalogoId], references: [id], onDelete: Restrict, map: "detalles_orden_item_catalogo_id_fkey")
+    itemCatalogo     ItemsCatalogo?            @relation(fields: [itemCatalogoId], references: [id], onDelete: Restrict, map: "detalles_orden_item_catalogo_id_fkey")
     orden            OrdenesServicio           @relation(fields: [ordenId], references: [id], onDelete: Cascade, map: "detalles_orden_orden_id_fkey")
 
     @@index([itemCatalogoId], map: "idx_detalles_orden_item")
     @@index([ordenId], map: "idx_detalles_orden_orden")
+    @@check(expression: "((item_catalogo_id IS NOT NULL) OR (proveedor_tercero IS NOT NULL))", map: "chk_detalle_orden_origen")
     @@check(expression: "(cantidad > (0)::numeric)", map: "chk_detalle_orden_cantidad")
     @@check(expression: "(impuesto >= (0)::numeric)", map: "chk_detalle_orden_impuesto")
     @@check(expression: "((tarifa_iva >= (0)::numeric) AND (tarifa_iva <= (100)::numeric))", map: "chk_detalle_orden_iva")
@@ -256,6 +258,7 @@ namespace public {
     facturaId            Uuid                  @map("factura_id")
     detalleOrdenId       Uuid?                 @map("detalle_orden_id")
     codigoItem           VarChar(50)?          @map("codigo_item")
+    proveedorTercero     VarChar(150)?         @map("proveedor_tercero")
     descripcion          VarChar(250)
     cantidad             Numeric(10, 2)
     precioUnitario       Numeric(14, 2)        @map("precio_unitario")

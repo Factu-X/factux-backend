@@ -95,3 +95,27 @@ describe("business validations", () => {
     expect(updateOrdenDetalleSchema.safeParse({ cantidad: "0.50" }).success).toBe(true);
   });
 });
+
+describe("repuesto de tercero", () => {
+  const tercero = { descripcion: "Bujia NGK", proveedor: "Taller Pepe", precio: 15000 };
+
+  it("acepta la linea de tercero con IVA GRAVADO 19 por defecto", () => {
+    const r = createOrdenDetalleSchema.parse({ tercero, cantidad: 2 });
+    expect(r).toMatchObject({ cantidad: 2, tercero: { tratamientoIva: "GRAVADO", tarifaIva: 19 } });
+  });
+
+  it("rechaza datos incompletos, excesos, IVA incoherente y mezclas con catalogo", () => {
+    const itemCatalogoId = "550e8400-e29b-41d4-a716-446655440000";
+    const malos = [
+      { tercero: { ...tercero, proveedor: "" } },
+      { tercero: { ...tercero, descripcion: "x".repeat(201) } },
+      { tercero: { ...tercero, precio: -1 } },
+      { tercero: { ...tercero, tratamientoIva: "EXENTO", tarifaIva: 19 } },
+      { tercero: { ...tercero, tarifaIva: 10 } },
+      { tercero: { ...tercero, extra: 1 } },
+      { tercero, itemCatalogoId },
+      { tercero, cantidad: 0 },
+    ];
+    for (const body of malos) expect(createOrdenDetalleSchema.safeParse(body).success).toBe(false);
+  });
+});

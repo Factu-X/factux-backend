@@ -12,10 +12,18 @@ export const carteraQuerySchema = z
     path: ["desde"],
   });
 
+export const metodoPagoSchema = z.enum(["EFECTIVO", "TRANSFERENCIA", "TARJETA", "OTRO"]);
+
+export const pagosQuerySchema = z.object({
+  desde: z.iso.date("Debe ser una fecha YYYY-MM-DD").optional(),
+  hasta: z.iso.date("Debe ser una fecha YYYY-MM-DD").optional(),
+  metodo: metodoPagoSchema.optional(),
+});
+
 export const registrarPagoSchema = z
   .object({
     monto: z.number().positive("El monto debe ser mayor que cero").max(1_000_000_000),
-    metodoPago: z.enum(["EFECTIVO", "TRANSFERENCIA", "TARJETA", "OTRO"]),
+    metodoPago: metodoPagoSchema,
     referencia: z.string().trim().max(150).nullable().optional(),
     observaciones: z.string().trim().max(500).nullable().optional(),
     fechaPago: z.iso.date("Debe ser una fecha YYYY-MM-DD").optional(),
@@ -27,4 +35,5 @@ export const registrarPagoSchema = z
   });
 
 export type CarteraQuery = z.infer<typeof carteraQuerySchema>;
+export type PagosQuery = z.infer<typeof pagosQuerySchema>;
 export type RegistrarPagoInput = z.infer<typeof registrarPagoSchema>;
