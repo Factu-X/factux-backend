@@ -19,11 +19,11 @@ Implementado (HU-01 a HU-14):
 - Recordatorios de mantenimiento con aviso por correo (Resend), manual y automatico cada 6 h.
 - Pruebas de usabilidad con cuestionario SUS, hallazgos por prioridad e informe.
 - Tests, lint, typecheck, build, GitHub Actions CI y SonarCloud.
+- Desplegado en Render (Oregon, plan gratuito; se suspende sin trafico): https://factux-backend.onrender.com/api/health. Frontend en https://front-complete.vercel.app.
 
 Fuera del alcance o pendiente:
 
 - Conexion SOAP real con la DIAN (requiere NIT habilitado y certificado acreditado).
-- Despliegue publico (procedimiento previsto en la documentacion tecnica).
 
 ## Stack
 
